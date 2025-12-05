@@ -3,57 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>健康與生活 - 每日焦點新聞</title>
+    <title>健康生活網 - 每日熱門焦點</title>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; background: #f0f2f5; }
-        .navbar { background-color: #2c3e50; padding: 15px; text-align: center; }
-        .navbar a { color: white; text-decoration: none; margin: 0 15px; font-weight: bold; font-size: 18px; }
-        .container { max-width: 800px; margin: 20px auto; padding: 20px; }
-        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-left: 5px solid #e74c3c; }
-        .btn { display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-top: 10px; }
+        body { font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; margin: 0; background: #f4f6f8; color: #333; }
+        .navbar { background-color: #2c3e50; padding: 15px; text-align: center; position: sticky; top: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .navbar a { color: white; text-decoration: none; margin: 0 12px; font-weight: bold; font-size: 16px; display: inline-block; }
+        .navbar a:hover { color: #f1c40f; }
+        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+        .header { text-align: center; margin-bottom: 40px; padding: 20px 0; border-bottom: 2px solid #ddd; }
+        .header h1 { margin: 0; color: #2c3e50; font-size: 28px; }
+        .header p { color: #7f8c8d; margin-top: 10px; }
+        
+        /* 卡片樣式 */
+        .card { background: white; padding: 25px; margin-bottom: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; border-left: 6px solid #ccc; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+        .card h2 { margin-top: 0; font-size: 22px; color: #2c3e50; }
+        .card .meta { font-size: 13px; color: #999; margin-bottom: 15px; display: block; }
+        .card p { color: #555; line-height: 1.6; margin-bottom: 20px; }
+        .btn { display: inline-block; background: #3498db; color: white; padding: 10px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 14px; }
         .btn:hover { background: #2980b9; }
-        .header { text-align: center; margin-bottom: 30px; }
+
+        /* 顏色分類 */
+        .tag-health { color: #e74c3c; font-weight: bold; }
+        .tag-news { color: #27ae60; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <!-- 導覽列 -->
     <div class="navbar">
-        <a href="index.html">首頁</a>
-        <!-- 注意：這裡連結指向資料夾 -->
-        <a href="health/sausage/">香腸危害</a>
-        <a href="health/lips/">厚唇困擾</a>
-        <a href="news/zhunan/">竹南奇聞</a>
+        <a href="index.html">🏠 首頁</a>
+        <a href="health/sausage/">🥓 香腸危機</a>
+        <a href="health/lips/">👄 厚唇心聲</a>
+        <a href="news/zhunan/">🍃 竹南奇聞</a>
     </div>
 
     <div class="container">
         <div class="header">
-            <h1>🔥 每日熱門生活話題</h1>
-            <p>使用分類資料夾架構：更專業的網址。</p>
+            <h1>🔥 Daily News 每日焦點</h1>
+            <p>搜羅全台奇聞軼事，關注你的健康大小事</p>
         </div>
 
-        <div class="card">
-            <h2>🚨 震驚！愛吃香腸的人注意了</h2>
-            <p>分類：<strong>健康 (Health)</strong></p>
-            <p>你是不是每次經過夜市都要買一根？小心你的嘴唇正在發出警訊！</p>
-            <!-- 連結指向資料夾 -->
+        <!-- 文章 1 -->
+        <div class="card" style="border-left-color: #e74c3c;">
+            <span class="meta">分類：<span class="tag-health">健康警訊</span> | 瀏覽次數：23,401</span>
+            <h2>🚨 震驚！愛吃香腸的人注意了，你的嘴唇正在發出警訊！</h2>
+            <p>夜市烤香腸香噴噴，但你知道嗎？世界衛生組織早已將加工肉品列為一級致癌物。如果你的嘴唇出現「這種腫脹」，可能是身體發炎的徵兆...</p>
             <a href="health/sausage/" class="btn">閱讀全文 &rarr;</a>
         </div>
 
-        <div class="card" style="border-left-color: #f1c40f;">
+        <!-- 文章 2 -->
+        <div class="card" style="border-left-color: #e67e22;">
+            <span class="meta">分類：<span class="tag-health">生活共鳴</span> | 瀏覽次數：45,112</span>
             <h2>👄 厚嘴唇的人才懂的 5 大崩潰瞬間</h2>
-            <p>分類：<strong>健康 (Health)</strong></p>
-            <p>朋友都說你的嘴唇很性感？只有你自己知道生活有多不方便！</p>
+            <p>「你的嘴唇好性感喔！」別再說這種風涼話了。你知道厚唇人喝飲料會漏水、冬天嘴唇會裂成大峽谷嗎？這篇文說出了無數人的心聲！</p>
             <a href="health/lips/" class="btn">閱讀全文 &rarr;</a>
         </div>
 
-        <div class="card" style="border-left-color: #2ecc71;">
-            <h2>🌬️ 獨家／竹南男子的慘痛經歷</h2>
-            <p>分類：<strong>新聞 (News)</strong></p>
-            <p>苗栗竹南一名男子阿明，因為嘴唇太厚加上當地的狂風，竟然發生慘劇！</p>
+        <!-- 文章 3 -->
+        <div class="card" style="border-left-color: #27ae60;">
+            <span class="meta">分類：<span class="tag-news">地方奇聞</span> | 瀏覽次數：88,905</span>
+            <h2>🌬️ 獨家／竹南風太大？男子嘴唇「腫成香腸」慘遭女友誤會分手</h2>
+            <p>新竹、苗栗一帶的「九降風」威力驚人。一名男子騎車載女友去龍鳳漁港，拿下安全帽後，女友竟然因為他「臉色太難看」當場提分手？真相讓人哭笑不得...</p>
             <a href="news/zhunan/" class="btn">閱讀全文 &rarr;</a>
         </div>
     </div>
+
+    <footer style="text-align: center; padding: 20px; color: #aaa; font-size: 12px;">
+        &copy; 2024 健康生活網 All Rights Reserved.
+    </footer>
 
 </body>
 </html>
