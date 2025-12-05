@@ -10,8 +10,6 @@
         .navbar a { color: white; text-decoration: none; margin: 0 15px; font-weight: bold; font-size: 18px; }
         .container { max-width: 800px; margin: 20px auto; padding: 20px; }
         .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-left: 5px solid #e74c3c; }
-        .card h2 { margin-top: 0; color: #333; }
-        .card p { color: #666; line-height: 1.6; }
         .btn { display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-top: 10px; }
         .btn:hover { background: #2980b9; }
         .header { text-align: center; margin-bottom: 30px; }
@@ -22,36 +20,38 @@
     <!-- 導覽列 -->
     <div class="navbar">
         <a href="index.html">首頁</a>
-        <a href="sausage.html">香腸危害</a>
-        <a href="lips.html">厚唇困擾</a>
-        <a href="zhunan.html">竹南奇聞</a>
+        <!-- 注意：這裡連結指向資料夾 -->
+        <a href="health/sausage/">香腸危害</a>
+        <a href="health/lips/">厚唇困擾</a>
+        <a href="news/zhunan/">竹南奇聞</a>
     </div>
 
     <div class="container">
         <div class="header">
             <h1>🔥 每日熱門生活話題</h1>
-            <p>關注健康，關心生活，從今天開始。</p>
+            <p>使用分類資料夾架構：更專業的網址。</p>
         </div>
 
-        <!-- 文章 1 介紹 -->
         <div class="card">
             <h2>🚨 震驚！愛吃香腸的人注意了</h2>
-            <p>你是不是每次經過夜市都要買一根？小心你的嘴唇正在發出警訊！世界衛生組織已經將加工肉品列為警示，快來看看你的身體有沒有這些反應...</p>
-            <a href="sausage.html" class="btn">閱讀全文 &rarr;</a>
+            <p>分類：<strong>健康 (Health)</strong></p>
+            <p>你是不是每次經過夜市都要買一根？小心你的嘴唇正在發出警訊！</p>
+            <!-- 連結指向資料夾 -->
+            <a href="health/sausage/" class="btn">閱讀全文 &rarr;</a>
         </div>
 
-        <!-- 文章 2 介紹 -->
         <div class="card" style="border-left-color: #f1c40f;">
             <h2>👄 厚嘴唇的人才懂的 5 大崩潰瞬間</h2>
-            <p>朋友都說你的嘴唇很性感？只有你自己知道生活有多不方便！喝飲料找不到吸管口、冬天乾裂像沙漠...這篇文說出了無數厚唇人的心聲。</p>
-            <a href="lips.html" class="btn">閱讀全文 &rarr;</a>
+            <p>分類：<strong>健康 (Health)</strong></p>
+            <p>朋友都說你的嘴唇很性感？只有你自己知道生活有多不方便！</p>
+            <a href="health/lips/" class="btn">閱讀全文 &rarr;</a>
         </div>
 
-        <!-- 文章 3 介紹 -->
         <div class="card" style="border-left-color: #2ecc71;">
             <h2>🌬️ 獨家／竹南男子的慘痛經歷</h2>
-            <p>苗栗竹南一名男子阿明，因為嘴唇太厚加上當地的狂風，竟然發生了讓女友誤會分手的慘劇！網友看完紛紛表示：「這理由太瞎了但在竹南很合理」。</p>
-            <a href="zhunan.html" class="btn">閱讀全文 &rarr;</a>
+            <p>分類：<strong>新聞 (News)</strong></p>
+            <p>苗栗竹南一名男子阿明，因為嘴唇太厚加上當地的狂風，竟然發生慘劇！</p>
+            <a href="news/zhunan/" class="btn">閱讀全文 &rarr;</a>
         </div>
     </div>
 
