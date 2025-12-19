@@ -1,4 +1,93 @@
-<!-- 追加樣式：用於深層探討區塊 -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<style>
+    .constitutional-report {
+        font-family: "Microsoft JhengHei", "Heiti TC", Arial, sans-serif;
+        line-height: 1.7;
+        color: #2c3e50;
+        max-width: 850px;
+        margin: 0 auto;
+        padding: 40px;
+        background-color: #fff;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .constitutional-report h1 {
+        font-size: 24px;
+        color: #c0392b;
+        border-bottom: 3px solid #c0392b;
+        padding-bottom: 15px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    .constitutional-report h3 {
+        font-size: 18px;
+        color: #2980b9;
+        margin-top: 40px;
+        margin-bottom: 20px;
+        border-left: 5px solid #2980b9;
+        padding-left: 10px;
+    }
+    .timeline-item {
+        margin-bottom: 15px;
+    }
+    .timeline-date {
+        font-weight: bold;
+        color: #d35400;
+        display: inline-block;
+        min-width: 120px;
+    }
+    .news-box {
+        background-color: #f4f6f7;
+        border: 1px solid #d5dbdb;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .news-title {
+        font-weight: bold;
+        color: #34495e;
+        margin-bottom: 5px;
+        display: block;
+        font-size: 1.1em;
+    }
+    .summary-text {
+        font-size: 0.95em;
+        color: #555;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        font-size: 0.95em;
+    }
+    th {
+        background-color: #34495e;
+        color: #fff;
+        padding: 12px;
+        text-align: left;
+    }
+    td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        vertical-align: top;
+    }
+    tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+    .conclusion-box {
+        background-color: #fff8e1;
+        border-left: 5px solid #f1c40f;
+        padding: 20px;
+        margin-top: 30px;
+    }
+    .highlight {
+        font-weight: bold;
+        color: #c0392b;
+    }
+</style>
 <style>
     .deep-dive-section {
         margin-top: 50px;
@@ -85,7 +174,103 @@
         .conflict-container { flex-direction: column; }
     }
 </style>
+</head>
+<body>
 
+<div class="constitutional-report">
+
+    <h1>📅 事件檔案：憲法法庭 114 年憲判字第 1 號</h1>
+
+    <h3>1. 前言與背景 (The Prelude)</h3>
+    <p>此事件並非一日之寒，而是長達一年以上的「憲政僵局」總爆發。</p>
+    <ul>
+        <li class="timeline-item">
+            <span class="timeline-date">2024年10月</span>
+            <br>前任總統提名的 7 位大法官任期屆滿。新任人選因立法院「朝小野大」遭杯葛，大法官僅剩 8 人。
+        </li>
+        <li class="timeline-item">
+            <span class="timeline-date">2024年底～2025初</span>
+            <br>立法院通過《憲法訴訟法》修正案，將判決門檻提高至「法定總額（15人）的 2/3」，即需 10 人。
+        </li>
+        <li class="timeline-item">
+            <span class="timeline-date">2025年全年</span>
+            <br>現任僅 8 人，無法達到新法 10 人門檻。憲法法庭實質停擺，被稱為「憲法空窗年」。
+        </li>
+        <li class="timeline-item">
+            <span class="timeline-date">2025年12月19日</span>
+            <br>憲法法庭代理院長動用「程序自主權」，認定新法違憲。
+        </li>
+    </ul>
+
+    <h3>2. 模擬新聞媒體視角 (News Snippets)</h3>
+    
+    <div class="news-box">
+        <span class="news-title">📰 【即時快訊】震驚政壇！憲法法庭宣告《憲訴法》修法違憲</span>
+        <div class="summary-text">
+            憲法法庭今日下午 3 點召開記者會，針對導致司法癱瘓一整年的新版《憲法訴訟法》做出判決。5 位大法官認定立法程序有重大瑕疵且違反權力分立，宣告新法「即日起失效」。這是憲法法庭睽違一年多來的首號判決，宣告司法權正式「復活」。
+        </div>
+    </div>
+
+    <div class="news-box">
+        <span class="news-title">📰 【深度報導】3 大法官拒絕背書！憲法法庭上演「茶壺風暴」</span>
+        <div class="summary-text">
+            本次判決並非全員到齊。大法官楊惠欽、蔡宗珍、朱富美 3 人發出聲明，強調依現行法律（新法），8 人根本無法組成合法法庭，今日的評議是「違法會議」。3 人以拒絕出席表達最強烈抗議。
+        </div>
+    </div>
+
+    <div class="news-box">
+        <span class="news-title">📰 【政治反應】藍白怒轟「司法政變」、綠營稱「憲政回歸」</span>
+        <div class="summary-text">
+            國民黨團怒斥這是「赤裸裸的司法政變」，揚言彈劾；民眾黨團批評「少數綁架多數」；民進黨團則稱許大法官「忍辱負重」，解開立法權設下的違憲死結。
+        </div>
+    </div>
+
+    <h3>3. 關鍵爭點整理 (Data Points)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th width="20%">比較項目</th>
+                <th width="40%">多數意見（判決方 5 人）</th>
+                <th width="40%">拒絕參與（抗議方 3 人）</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>核心立場</strong></td>
+                <td><span class="highlight">憲法生存權優先</span></td>
+                <td><span class="highlight">程序法治原則優先</span></td>
+            </tr>
+            <tr>
+                <td><strong>對新法的看法</strong></td>
+                <td>該法律導致憲法法庭無法運作，違反權力分立，故「自始違憲」，法庭有權拒絕適用。</td>
+                <td>新法經立法院通過，未被宣告違憲前「即為有效法律」，必須遵守。</td>
+            </tr>
+            <tr>
+                <td><strong>人數計算</strong></td>
+                <td>3 人拒絕行使職權視同缺額。分母 8 減為 5。<br><strong>5/5 = 100% 同意。</strong></td>
+                <td>法定門檻是 10 人，現任僅 8 人。<br><strong>8 < 10，根本無權開會。</strong></td>
+            </tr>
+            <tr>
+                <td><strong>歷史定位</strong></td>
+                <td>解救憲政危機的「必要之惡」。</td>
+                <td>破壞法治程序的「違法暴衝」。</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>4. 綜合結論與評析 (Conclusion)</h3>
+    <div class="conclusion-box">
+        <p>這份「114 年憲判字第 1 號」判決，將註定成為台灣法學教科書中最具爭議的一章。</p>
+        
+        <p><strong>第一，這是「司法權」的絕地反攻：</strong><br>
+        5 位大法官的邏輯是：「為了讓憲法活下去，我必須殺死這條法律。」這在憲法學上被稱為「憲法機關的自我防衛權」。</p>
+
+        <p><strong>第二，「5 人判決」的正當性赤字：</strong><br>
+        僅由 5 人（且全數由同一時期任命）宣告國會法律無效，極易被貼上「司法獨裁」標籤。且 3 位大法官的「拒絕出席」，讓判決暴露了司法內部的嚴重分歧。</p>
+
+        <p><strong>總結來說：</strong><br>
+        這 5 位大法官贏了「裡子」（憲法法庭恢復運作），但輸了「面子」（判決的社會公信力）。而那 3 位大法官保住了「名節」（堅持程序正義），卻無法阻止「時局」的推進。這場憲政危機，沒有真正的贏家，只有受傷的憲法尊嚴。</p>
+    </div>
 <!-- 新增內容：法理學深度探討 -->
 <div class="deep-dive-section">
     <div class="deep-dive-header">
@@ -126,3 +311,7 @@
         </div>
     </div>
 </div>
+</div>
+
+</body>
+</html>
