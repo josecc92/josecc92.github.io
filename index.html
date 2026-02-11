@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 檔案檢視器 (GitHub Pages)</title>
+    <style>
+        body {
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        h1 { text-align: center; color: #1a1a1a; margin-top: 0; }
+        p.subtitle { text-align: center; color: #666; margin-bottom: 30px; }
+
+        /* 檔案上傳區樣式 */
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background-color: #f8fafc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+
+        .upload-area input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-icon { font-size: 48px; color: #4299e1; margin-bottom: 10px; }
+        .upload-text { font-size: 18px; color: #4a5568; font-weight: 500; }
+        .upload-hint { font-size: 14px; color: #a0aec0; margin-top: 5px; }
+
+        /* 結果顯示區 */
+        #result-area {
+            display: none;
+            margin-top: 30px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 30px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 左右各一半 */
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-layout { grid-template-columns: 1fr; } /* 手機版變單欄 */
+        }
+
+        /* 圖片區 */
+        .image-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            background-image:
+                linear-gradient(45deg, #eee 25%, transparent 25%),
+                linear-gradient(-45deg, #eee 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #eee 75%),
+                linear-gradient(-45deg, transparent 75%, #eee 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        img#resImage {
+            max-width: 100%;
+            max-height: 500px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 4px;
+        }
+
+        /* 資料表格 */
+        .info-row {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            width: 100px;
+            font-weight: bold;
+            color: #718096;
+        }
+        .info-value {
+            flex: 1;
+            color: #2d3748;
+            font-weight: 600;
+        }
+
+        .desc-block { margin-top: 20px; }
+        .desc-label { font-weight: bold; color: #718096; display: block; margin-bottom: 8px; }
+        .desc-content {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            line-height: 1.6;
+            color: #4a5568;
+            white-space: pre-wrap;
+        }
+
+        #errorMsg {
+            color: #e53e3e;
+            background: #fff5f5;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📂 Base64 檔案檢視器</h1>
+    <p class="subtitle">請選擇包含 Base64 字串的文字檔 (.txt)，無需上傳伺服器即可檢視。</p>
+
+    <!-- 檔案上傳區 -->
+    <div class="upload-area">
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">點擊選擇檔案 或 拖曳檔案至此</div>
+        <div class="upload-hint">支援格式: .txt, .json</div>
+        <!-- 這個 input 是隱藏的，覆蓋在整個區域上 -->
+        <input type="file" id="fileInput" accept=".txt,.json,.dat">
+    </div>
+
+    <div id="errorMsg"></div>
+
+    <!-- 結果顯示區 -->
+    <div id="result-area">
+        <div class="grid-layout">
+            
+            <!-- 左側：圖片 -->
+            <div>
+                <h3 style="margin-top:0; color:#4a5568;">圖片預覽</h3>
+                <div class="image-card">
+                    <img id="resImage" style="display:none;">
+                    <span id="noImageText" style="color:#a0aec0;">無圖片資料</span>
+                </div>
+            </div>
+
+            <!-- 右側：資料 -->
+            <div>
+                <h3 style="margin-top:0; color:#4a5568;">詳細資料</h3>
+                <div class="info-row">
+                    <span class="info-label">Date</span>
+                    <span class="info-value" id="resDate">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Name</span>
+                    <span class="info-value" id="resName">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Age</span>
+                    <span class="info-value" id="resAge">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">CPA</span>
+                    <span class="info-value" id="resCPA">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Shop</span>
+                    <span class="info-value" id="resShop">-</span>
+                </div>
+
+                <div class="desc-block">
+                    <span class="desc-label">Description</span>
+                    <div class="desc-content" id="resDesc"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const resultArea = document.getElementById('result-area');
+    const errorMsg = document.getElementById('errorMsg');
+
+    // 監聽檔案選擇事件
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // 顯示載入中... (對於極大檔案有用)
+        errorMsg.style.display = 'none';
+        resultArea.style.display = 'none';
+
+        const reader = new FileReader();
+
+        // 當檔案讀取完成時觸發
+        reader.onload = function(event) {
+            try {
+                const content = event.target.result.trim(); // 這是檔案裡的原始字串
+                processData(content);
+            } catch (err) {
+                showError("無法讀取檔案: " + err.message);
+            }
+        };
+
+        reader.onerror = function() {
+            showError("讀取檔案時發生錯誤");
+        };
+
+        // 開始以文字模式讀取
+        reader.readAsText(file);
+    });
+
+    function processData(base64String) {
+        try {
+            // 1. Base64 解碼 (處理中文亂碼問題)
+            // atob() 解出的字串是 binary string，需要轉成 Uint8Array 再用 TextDecoder 轉回 UTF-8
+            const binaryString = atob(base64String);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const jsonString = new TextDecoder('utf-8').decode(bytes);
+
+            // 2. JSON 解析
+            const data = JSON.parse(jsonString);
+
+            // 3. 填入資料
+            document.getElementById('resDate').textContent = data.date || '-';
+            document.getElementById('resName').textContent = data.name || '-';
+            document.getElementById('resAge').textContent = data.age || '-';
+            document.getElementById('resCPA').textContent = data.cpa || '-';
+            document.getElementById('resShop').textContent = data.shop || '-';
+            document.getElementById('resDesc').textContent = data.description || '';
+
+            // 4. 圖片處理
+            const imgElem = document.getElementById('resImage');
+            const noImgText = document.getElementById('noImageText');
+            let imgData = data.image_data;
+
+            if (imgData) {
+                // 如果沒有檔頭，預設加上 PNG (或你常用的格式)
+                if (!imgData.startsWith('data:image')) {
+                    imgData = 'data:image/png;base64,' + imgData;
+                }
+                imgElem.src = imgData;
+                imgElem.style.display = 'block';
+                noImgText.style.display = 'none';
+            } else {
+                imgElem.style.display = 'none';
+                noImgText.style.display = 'block';
+            }
+
+            // 顯示結果
+            resultArea.style.display = 'block';
+
+        } catch (e) {
+            console.error(e);
+            showError("解析失敗：檔案內容可能不是正確的加密格式，或是 Base64 編碼損毀。(" + e.message + ")");
+        }
+    }
+
+    function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
