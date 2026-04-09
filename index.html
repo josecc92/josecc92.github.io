@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>網站總首頁 | 專案管理系統</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, '微軟正黑體', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        /* 頂部導覽列 / 橫幅 */
+        .hero {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            text-align: center;
+            padding: 60px 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .hero h1 {
+            margin: 0;
+            font-size: 36px;
+            letter-spacing: 2px;
+        }
+        .hero p {
+            margin-top: 15px;
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        /* 內容區塊 - 卡片網格設計 */
+        .container {
+            max-width: 1000px;
+            margin: -30px auto 40px auto; /* 讓卡片往上稍微覆蓋橫幅，增加立體感 */
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        /* 導覽卡片 */
+        .nav-card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-top: 5px solid transparent;
+        }
+
+        /* 第一張卡片的裝飾色 (都更專案) */
+        .nav-card.ur-project { border-top-color: #e74c3c; }
+        
+        /* 第二張卡片的裝飾色 (預留給未來) */
+        .nav-card.other-project { border-top-color: #2ecc71; }
+
+        .nav-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+        }
+
+        .nav-card .icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+
+        .nav-card h2 {
+            margin: 0 0 10px 0;
+            font-size: 22px;
+            color: #2c3e50;
+        }
+
+        .nav-card p {
+            margin: 0;
+            color: #666;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 頂部橫幅 -->
+    <div class="hero">
+        <h1>我的專案管理入口網</h1>
+        <p>點選下方區塊進入各專案文件庫</p>
+    </div>
+
+    <!-- 卡片導覽區 -->
+    <div class="container">
+        
+        <!-- 連結 1：指向你的「都更文件列表」 -->
+        <!-- 💡 注意：這邊的 href 指向我們上一篇做的列表頁面 -->
+        <a href="markdown/markdown-viewer.html" class="nav-card ur-project">
+            <div class="icon">🏘️</div>
+            <h2>都市更新專案</h2>
+            <p>包含法規試算、會議記錄、地主意願調查及進度追蹤報告。</p>
+        </a>
+
+        <!-- 連結 2：未來如果有其他專案，可以放這裡 (目前為暫時連結) -->
+        <a href="#" class="nav-card other-project">
+            <div class="icon">📁</div>
+            <h2>其他專案</h2>
+            <p>建置中，未來將放入其他建案的相關文件與進度。</p>
+        </a>
+
+    </div>
+
+</body>
+</html>
