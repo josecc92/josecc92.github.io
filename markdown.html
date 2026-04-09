@@ -2,14 +2,127 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>我的網站首頁</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>都更專案文件庫</title>
+    <style>
+        /* 基本網頁設定 */
+        body {
+            font-family: 'Helvetica Neue', Arial, '微軟正黑體', sans-serif;
+            background-color: #f4f7f6; /* 專業的淺灰背景 */
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 內容置中容器 */
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* 頂部標題區 */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* 文件列表區 */
+        .doc-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px; /* 卡片之間的距離 */
+        }
+
+        /* 單個文件卡片 */
+        .doc-card {
+            display: flex;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            text-decoration: none; /* 移除超連結底線 */
+            color: inherit;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-left: 5px solid #4a90e2; /* 左側藍色裝飾線 */
+            transition: all 0.3s ease; /* 動畫過渡效果 */
+        }
+
+        /* 滑鼠移過去的特效 */
+        .doc-card:hover {
+            transform: translateY(-3px); /* 往上浮動 */
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1); /* 陰影加深 */
+            border-left-color: #d0021b; /* 左側線條變色，提醒可點擊 */
+        }
+
+        /* 日期區塊 */
+        .doc-date {
+            font-size: 14px;
+            font-weight: bold;
+            color: #4a90e2;
+            min-width: 110px; /* 固定寬度讓列表對齊 */
+            letter-spacing: 1px;
+        }
+
+        /* 標題與摘要區塊 */
+        .doc-info {
+            flex-grow: 1;
+        }
+        .doc-info h2 {
+            margin: 0 0 5px 0;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+        .doc-info p {
+            margin: 0;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        /* 手機版響應式設計 */
+        @media (max-width: 600px) {
+            .doc-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .doc-date {
+                margin-bottom: 8px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>歡迎來到我的網站</h1>
-    
-    <ul>
-        <!-- 點擊這些連結，會打開 viewer.html 並告訴它要讀哪一個 md 檔 -->
-   <li><a href="markdown/markdown-viewer.html?file=urban-renewal/20260409.md">20260409</a></li>
-    </ul>
+
+    <div class="container">
+        <!-- 標題區 -->
+        <div class="header">
+            <h1>🏘️ 都市更新專案文件庫</h1>
+            <p>此專區用於彙整並追蹤都更案之相關會議記錄與進度報告，內容將持續更新。</p>
+        </div>
+
+        <!-- 文件列表 -->
+        <div class="doc-list">
+
+            <!-- 📄 未來有新文章，就把下面這一整塊 <a>...</a> 複製一份貼在最上面 -->
+            <a href="markdown/markdown-viewer.html?file=urban-renewal/20260409.md" class="doc-card">
+                <div class="doc-date">2026.04.09</div>
+                <div class="doc-info">
+                    <h2>都更初步評估報告與會議記錄</h2> <!-- 建議給個標題 -->
+                    <p>專案啟動會議，討論基地現況與法規容積率初步試算。</p> <!-- 簡單一句話說明 -->
+                </div>
+            </a>
+
+        </div>
+    </div>
+
 </body>
 </html>
