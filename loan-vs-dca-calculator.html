@@ -35,12 +35,16 @@
     .result-card p { margin: 12px 0; font-size: 14px; color: #555; display: flex; justify-content: space-between; border-bottom: 1px dashed #e0e0e0; padding-bottom: 5px; }
     .result-card span { font-size: 16px; color: #000; font-weight: bold; }
     .highlight { color: #e74c3c !important; font-size: 18px !important; }
+
+    /* 勝負總結區塊 */
+    .conclusion-banner { background: #e8f4fd; border-left: 5px solid #3498db; padding: 15px 20px; border-radius: 5px; margin-top: 20px; font-size: 16px; display: none; line-height: 1.5; color: #2c3e50; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .conclusion-banner strong { font-size: 18px; color: #e74c3c; }
+    .conclusion-banner .percent { font-size: 20px; font-weight: bold; margin-left: 5px; }
     
     .math-box { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; border-left: 5px solid #6c757d; font-family: 'Courier New', Courier, monospace; font-size: 14px; line-height: 1.6; display: none; overflow-x: auto;}
     .math-box strong { color: #2c3e50; font-family: 'Segoe UI', Tahoma, sans-serif; display: block; margin-top: 15px; font-size: 15px; }
     .math-formula { color: #d35400; font-weight: bold; margin-bottom: 5px;}
     
-    /* 表格容器加入橫向滾動，避免手機版破版 */
     .table-responsive { width: 100%; overflow-x: auto; display: none; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 8px; }
     table { width: 100%; min-width: 700px; border-collapse: collapse; font-size: 14px; text-align: right; background: white; }
     th, td { padding: 12px 15px; border-bottom: 1px solid #eee; }
@@ -51,8 +55,7 @@
     .col-loan { color: #d35400; font-weight: bold; }
     .col-dca { color: #27ae60; font-weight: bold; }
     
-    /* 折線圖容器 */
-    .chart-container { width: 100%; margin-top: 30px; padding-top: 20px; border-top: 2px dashed #ddd; display: none; }
+    .chart-container { width: 100%; margin-top: 30px; padding-top: 20px; border-top: 2px dashed #ddd; display: none; position: relative; }
   </style>
 </head>
 <body>
@@ -94,6 +97,8 @@
     
     <button onclick="calculateComparison()">執行策略比較試算</button>
 
+    <div class="conclusion-banner" id="topConclusion"></div>
+
     <div class="result-container" id="resultBox">
       <div class="result-card card-loan">
         <h3>策略 A：信貸單筆投入</h3>
@@ -117,6 +122,8 @@
     </div>
 
     <div class="chart-container" id="chartBox">
+      <h3 style="text-align: center; color: #333; margin-bottom: 5px;">策略走勢對照圖</h3>
+      <div id="chartConclusion" style="text-align: center; margin-bottom: 20px; font-size: 15px; color: #555;"></div>
       <canvas id="strategyChart"></canvas>
     </div>
 
@@ -126,7 +133,7 @@
           <tr>
             <th class="col-year">年度</th>
             <th>階段狀態</th>
-            <th>累積掏出成本 (A與B相同)</th>
+            <th>累積總投入成本</th>
             <th class="col-loan">策略 A (信貸) 累積資產</th>
             <th class="col-dca">策略 B (定額) 累積資產</th>
           </tr>
@@ -138,7 +145,7 @@
   </div>
 
   <script>
-    let myChart = null; // 全域變數儲存圖表實例，避免重複繪製重疊
+    let myChart = null;
 
     function calculateComparison() {
       // 1. 取得參數
@@ -165,13 +172,12 @@
       }
       const totalCashOutPocket = initialAmount + (monthlyPMT * months1);
 
-      // --- 陣列準備 (給表格與圖表使用) ---
+      // --- 陣列準備 ---
       let historyData = [];
       let currentAssetA = initialAmount + loanAmount;
       let currentAssetB = initialAmount;
       let currentCost = initialAmount;
 
-      // 為了畫圖在「第0年」的起始點
       historyData.push({
         year: 0,
         phaseText: "起步",
@@ -182,10 +188,8 @@
 
       // 3. 逐月推演計算
       for (let m = 1; m <= totalMonths; m++) {
-        // 策略 A 變化 (純複利)
         currentAssetA = currentAssetA * (1 + monthlyInvestRate);
         
-        // 策略 B 與 成本 變化
         if (m <= months1) {
           currentAssetB = currentAssetB * (1 + monthlyInvestRate) + monthlyPMT;
           currentCost += monthlyPMT;
@@ -193,10 +197,9 @@
           currentAssetB = currentAssetB * (1 + monthlyInvestRate);
         }
 
-        // 滿一年紀錄一次數據
         if (m % 12 === 0) {
           const year = m / 12;
-          const phaseText = year <= phase1Years ? "第一階段 (投入/還款)" : "第二階段 (放置滾息)";
+          const phaseText = year <= phase1Years ? "第一階段 (投入)" : "第二階段 (放置)";
           historyData.push({
             year: year,
             phaseText: phaseText,
@@ -215,10 +218,34 @@
       const netProfitA = finalAssetA - totalCashOutPocket;
       const netProfitB = finalAssetB - totalCashOutPocket;
 
-      // 4. 更新畫面文字
-      const fNum = (num) => Math.round(num).toLocaleString('zh-TW');
-      const fRate = (rate) => (rate).toFixed(6);
+      // === 新增：計算勝出總結與百分比 ===
+      // 利潤差異計算 (策略A - 策略B)
+      const profitDiff = netProfitA - netProfitB;
+      let percentDiff = 0;
+      
+      // 避免除以 0 的錯誤
+      if (netProfitB !== 0) {
+        percentDiff = (profitDiff / Math.abs(netProfitB)) * 100;
+      }
 
+      const fNum = (num) => Math.round(num).toLocaleString('zh-TW');
+      const fRate = (rate) => rate.toFixed(2);
+
+      let conclusionText = '';
+      if (profitDiff > 0) {
+        conclusionText = `🏆 <b>策略 A (信貸單筆) 勝出！</b><br>在付出相同現金流的情況下，策略 A 最終創造的淨利比策略 B <b>多賺了 ${fNum(profitDiff)} 元</b> <span class="percent" style="color:#e74c3c;">(+${fRate(percentDiff)}%)</span>`;
+      } else if (profitDiff < 0) {
+        conclusionText = `🏆 <b>策略 B (無借貸定額) 勝出！</b><br>因為借貸成本侵蝕獲利，策略 B 最終創造的淨利反而 <b>多賺了 ${fNum(Math.abs(profitDiff))} 元</b> <span class="percent" style="color:#2ecc71;">(${fRate(Math.abs(percentDiff))}%)</span>`;
+      } else {
+        conclusionText = `⚖️ <b>平手！兩種策略最終淨利完全相同。</b><br>這代表借款利率恰好抵銷了投資報酬。`;
+      }
+
+      // 將結論注入畫面
+      document.getElementById('topConclusion').innerHTML = conclusionText;
+      document.getElementById('chartConclusion').innerHTML = conclusionText;
+
+
+      // 4. 更新畫面數字
       document.getElementById('loanTotalCost').innerText = fNum(totalCashOutPocket);
       document.getElementById('loanPhase1Asset').innerText = fNum(phase1AssetA);
       document.getElementById('loanFinalAsset').innerText = fNum(finalAssetA);
@@ -230,36 +257,20 @@
       document.getElementById('dcaNetProfit').innerText = fNum(netProfitB);
 
       // --- 5. 渲染算式解析 ---
-      const rM_invest = fRate(monthlyInvestRate);
-      const rM_loan = fRate(monthlyLoanRate);
+      const rM_invest = (monthlyInvestRate).toFixed(6);
+      const rM_loan = (monthlyLoanRate).toFixed(6);
       const pmtStr = Math.round(monthlyPMT);
 
       const mathHtml = `
-        <strong>【每月鎖定現金流 (信貸本息均攤)】</strong>
-        <div class="math-formula">PMT = 貸款總額 × [月利率 × (1+月利率)^期數] ÷ [(1+月利率)^期數 - 1]</div>
-        ↳ PMT = ${fNum(loanAmount)} × [${rM_loan} × (1+${rM_loan})^${months1}] ÷ [(1+${rM_loan})^${months1} - 1]<br>
-        ↳ 每月需掏出基準: <b>${fNum(pmtStr)} 元</b><br>
-
         <strong>【真實掏出總成本計算】</strong>
         <div class="math-formula">總成本 = 自有初始資金 + (每月固定現金流 × 第一階段總月數)</div>
         ↳ 總成本 = ${fNum(initialAmount)} + (${fNum(pmtStr)} × ${months1})<br>
         ↳ 最終結算總掏出: <b>${fNum(totalCashOutPocket)} 元</b><br>
-
-        <strong>【策略 A (信貸) 第一階段期末資產計算】</strong>
-        <div class="math-formula">FV = (自有資金+借款總額) × (1+投資月利率)^總期數</div>
-        ↳ FV_A = (${fNum(initialAmount)} + ${fNum(loanAmount)}) × (1 + ${rM_invest})^${months1}<br>
-        ↳ 結算金額: <b>${fNum(phase1AssetA)} 元</b><br>
-
-        <strong>【策略 B (定額) 第一階段期末資產計算】</strong>
-        <div class="math-formula">FV = [自有資金 × (1+投資月利率)^期數] + [月定額 × ((1+投資月利率)^期數 - 1) ÷ 投資月利率]</div>
-        ↳ FV_B = [${fNum(initialAmount)} × (1 + ${rM_invest})^${months1}] + [${fNum(pmtStr)} × ((1 + ${rM_invest})^${months1} - 1) ÷ ${rM_invest}]<br>
-        ↳ 結算金額: <b>${fNum(phase1AssetB)} 元</b><br>
       `;
       document.getElementById('mathContent').innerHTML = mathHtml;
 
       // --- 6. 渲染年度變化表 ---
       let tableHtml = '';
-      // 從第1年開始印在表格
       for(let i=1; i<historyData.length; i++) {
         let row = historyData[i];
         tableHtml += `
@@ -276,16 +287,12 @@
 
       // --- 7. 繪製 Chart.js 走勢圖 ---
       const labels = historyData.map(d => `第 ${d.year} 年`);
-      const dataCost = historyData.map(d => d.cost); // 兩者成本重疊
+      const dataCost = historyData.map(d => d.cost); 
       const dataAssetA = historyData.map(d => d.assetA);
       const dataAssetB = historyData.map(d => d.assetB);
 
       const ctx = document.getElementById('strategyChart').getContext('2d');
-      
-      // 如果圖表已存在，先銷毀避免重疊
-      if (myChart) {
-          myChart.destroy();
-      }
+      if (myChart) myChart.destroy();
 
       myChart = new Chart(ctx, {
           type: 'line',
@@ -311,19 +318,11 @@
                       fill: true
                   },
                   {
-                      label: '策略 A 掏出成本',
+                      // 修改點：將兩條重疊的線合併為一條統一的成本線
+                      label: '總投入成本 (A與B相同)',
                       data: dataCost,
-                      borderColor: '#d35400',
-                      borderDash: [5, 5], // 短虛線
-                      borderWidth: 2,
-                      pointRadius: 0,
-                      fill: false
-                  },
-                  {
-                      label: '策略 B 掏出成本',
-                      data: dataCost,
-                      borderColor: '#27ae60',
-                      borderDash: [15, 5], // 長虛線 (與A重疊時依然可辨識)
+                      borderColor: '#7f8c8d',
+                      borderDash: [5, 5],
                       borderWidth: 2,
                       pointRadius: 0,
                       fill: false
@@ -350,7 +349,7 @@
                       beginAtZero: false,
                       ticks: {
                           callback: function(value) {
-                              return value.toLocaleString('zh-TW'); // 讓 Y 軸數字顯示千分位
+                              return value.toLocaleString('zh-TW');
                           }
                       }
                   }
@@ -359,6 +358,7 @@
       });
 
       // 顯示隱藏的區塊
+      document.getElementById('topConclusion').style.display = 'block';
       document.getElementById('resultBox').style.display = 'grid';
       document.getElementById('mathBox').style.display = 'block';
       document.getElementById('chartBox').style.display = 'block';
