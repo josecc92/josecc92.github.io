@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>終極版投資策略試算 | 包含完整算式、表格與走勢圖</title>
+  <title>終極版投資策略試算 | 包含通膨折現、算式與走勢圖</title>
   
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -35,8 +35,8 @@
     .result-card p { margin: 12px 0; font-size: 14px; color: #555; display: flex; justify-content: space-between; border-bottom: 1px dashed #e0e0e0; padding-bottom: 5px; }
     .result-card span { font-size: 16px; color: #000; font-weight: bold; }
     .highlight { color: #e74c3c !important; font-size: 18px !important; }
+    .real-value { color: #8e44ad !important; font-size: 17px !important; font-weight: 900 !important; } /* 通膨購買力特別標示色 */
 
-    /* 勝負總結區塊 */
     .conclusion-banner { background: #e8f4fd; border-left: 5px solid #3498db; padding: 15px 20px; border-radius: 5px; margin-top: 20px; font-size: 16px; display: none; line-height: 1.5; color: #2c3e50; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .conclusion-banner strong { font-size: 18px; color: #e74c3c; }
     .conclusion-banner .percent { font-size: 20px; font-weight: bold; margin-left: 5px; }
@@ -63,15 +63,15 @@
   <div class="calculator">
     <h2>終極版：信貸槓桿 vs 定期定額 比較面板</h2>
     
-    <div class="section-title">一、資金與報酬設定</div>
+    <div class="section-title">一、資金、報酬與通膨設定</div>
     <div class="input-grid">
       <div class="form-group">
         <label>目前已持有資金 (元)</label>
-        <input type="number" id="initialAmount" value="500000" min="0" step="10000">
+        <input type="number" id="initialAmount" value="5000000" min="0" step="100000">
       </div>
       <div class="form-group">
         <label>預計信貸總額 (元)</label>
-        <input type="number" id="loanAmount" value="1790000" min="0" step="10000">
+        <input type="number" id="loanAmount" value="5000000" min="0" step="100000">
       </div>
       <div class="form-group">
         <label>信貸年利率 (%)</label>
@@ -79,7 +79,12 @@
       </div>
       <div class="form-group">
         <label>預期投資年化報酬 (%)</label>
-        <input type="number" id="investRate" value="6" min="0" step="0.1">
+        <input type="number" id="investRate" value="8" min="0" step="0.1">
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label style="color: #8e44ad;">預估年化通膨率 (%)</label>
+        <div class="hint">用來將期末資產折現，計算出相當於現在的實質購買力 (台灣歷史平均約 2%)</div>
+        <input type="number" id="inflationRate" value="2" min="0" step="0.1" style="border: 1px solid #8e44ad;">
       </div>
     </div>
     
@@ -87,11 +92,11 @@
     <div class="input-grid">
       <div class="form-group">
         <label>第一階段：還款/投入期 (年)</label>
-        <input type="number" id="phase1Years" value="4" min="1">
+        <input type="number" id="phase1Years" value="5" min="1">
       </div>
       <div class="form-group">
         <label>第二階段：停扣後放置期 (年)</label>
-        <input type="number" id="phase2Years" value="5" min="0">
+        <input type="number" id="phase2Years" value="15" min="0">
       </div>
     </div>
     
@@ -104,15 +109,17 @@
         <h3>策略 A：信貸單筆投入</h3>
         <p>真實掏出總成本：<span id="loanTotalCost">0</span></p>
         <p>第一階段結束資產：<span id="loanPhase1Asset">0</span></p>
-        <p>最終總資產 (期末)：<span id="loanFinalAsset">0</span></p>
-        <p>最終淨利潤：<span id="loanNetProfit" class="highlight">0</span></p>
+        <p>最終總資產 (帳面名目)：<span id="loanFinalAsset">0</span></p>
+        <p>最終帳面淨利潤：<span id="loanNetProfit" class="highlight">0</span></p>
+        <p style="border-top: 2px solid #eee; padding-top: 10px; margin-top: 10px;">📉 扣除通膨實質購買力：<span id="loanRealAsset" class="real-value">0</span></p>
       </div>
       <div class="result-card card-dca">
         <h3>策略 B：無借貸定期定額</h3>
         <p>真實掏出總成本：<span id="dcaTotalCost">0</span></p>
         <p>第一階段結束資產：<span id="dcaPhase1Asset">0</span></p>
-        <p>最終總資產 (期末)：<span id="dcaFinalAsset">0</span></p>
-        <p>最終淨利潤：<span id="dcaNetProfit" class="highlight">0</span></p>
+        <p>最終總資產 (帳面名目)：<span id="dcaFinalAsset">0</span></p>
+        <p>最終帳面淨利潤：<span id="dcaNetProfit" class="highlight">0</span></p>
+        <p style="border-top: 2px solid #eee; padding-top: 10px; margin-top: 10px;">📉 扣除通膨實質購買力：<span id="dcaRealAsset" class="real-value">0</span></p>
       </div>
     </div>
 
@@ -122,7 +129,7 @@
     </div>
 
     <div class="chart-container" id="chartBox">
-      <h3 style="text-align: center; color: #333; margin-bottom: 5px;">策略走勢對照圖</h3>
+      <h3 style="text-align: center; color: #333; margin-bottom: 5px;">策略走勢對照圖 (帳面名目價值)</h3>
       <div id="chartConclusion" style="text-align: center; margin-bottom: 20px; font-size: 15px; color: #555;"></div>
       <canvas id="strategyChart"></canvas>
     </div>
@@ -134,8 +141,8 @@
             <th class="col-year">年度</th>
             <th>階段狀態</th>
             <th>累積總投入成本</th>
-            <th class="col-loan">策略 A (信貸) 累積資產</th>
-            <th class="col-dca">策略 B (定額) 累積資產</th>
+            <th class="col-loan">策略 A 累積資產 (名目)</th>
+            <th class="col-dca">策略 B 累積資產 (名目)</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -153,8 +160,11 @@
       const loanAmount = parseFloat(document.getElementById('loanAmount').value) || 0;
       const loanRate = parseFloat(document.getElementById('loanRate').value) / 100;
       const investRate = parseFloat(document.getElementById('investRate').value) / 100;
+      const inflationRate = parseFloat(document.getElementById('inflationRate').value) / 100;
+      
       const phase1Years = parseInt(document.getElementById('phase1Years').value) || 0;
       const phase2Years = parseInt(document.getElementById('phase2Years').value) || 0;
+      const totalYears = phase1Years + phase2Years;
 
       const months1 = phase1Years * 12;
       const months2 = phase2Years * 12;
@@ -178,15 +188,9 @@
       let currentAssetB = initialAmount;
       let currentCost = initialAmount;
 
-      historyData.push({
-        year: 0,
-        phaseText: "起步",
-        assetA: currentAssetA,
-        assetB: currentAssetB,
-        cost: currentCost
-      });
+      historyData.push({ year: 0, phaseText: "起步", assetA: currentAssetA, assetB: currentAssetB, cost: currentCost });
 
-      // 3. 逐月推演計算
+      // 3. 逐月推演計算 (帳面價值)
       for (let m = 1; m <= totalMonths; m++) {
         currentAssetA = currentAssetA * (1 + monthlyInvestRate);
         
@@ -200,17 +204,11 @@
         if (m % 12 === 0) {
           const year = m / 12;
           const phaseText = year <= phase1Years ? "第一階段 (投入)" : "第二階段 (放置)";
-          historyData.push({
-            year: year,
-            phaseText: phaseText,
-            assetA: currentAssetA,
-            assetB: currentAssetB,
-            cost: currentCost
-          });
+          historyData.push({ year: year, phaseText: phaseText, assetA: currentAssetA, assetB: currentAssetB, cost: currentCost });
         }
       }
 
-      // 提取最終結果
+      // 提取名目結果
       const phase1AssetA = historyData[phase1Years]?.assetA || currentAssetA;
       const phase1AssetB = historyData[phase1Years]?.assetB || currentAssetB;
       const finalAssetA = currentAssetA;
@@ -218,10 +216,15 @@
       const netProfitA = finalAssetA - totalCashOutPocket;
       const netProfitB = finalAssetB - totalCashOutPocket;
 
+      // === 新增：通膨折現計算 (實質購買力) ===
+      // 公式: 實質價值 = 名目價值 / (1 + 通膨率)^總年數
+      const discountFactor = Math.pow(1 + inflationRate, totalYears);
+      const realFinalAssetA = finalAssetA / discountFactor;
+      const realFinalAssetB = finalAssetB / discountFactor;
+
       // === 計算勝出總結與百分比 ===
       const profitDiff = netProfitA - netProfitB;
       let percentDiff = 0;
-      
       if (netProfitB !== 0) {
         percentDiff = (profitDiff / Math.abs(netProfitB)) * 100;
       }
@@ -231,13 +234,12 @@
 
       let conclusionText = '';
       if (profitDiff > 0) {
-        conclusionText = `🏆 <b>策略 A (信貸單筆) 勝出！</b><br>在付出相同現金流的情況下，策略 A 最終創造的淨利比策略 B <b>多賺了 ${fNum(profitDiff)} 元</b> <span class="percent" style="color:#e74c3c;">(+${fRate(percentDiff)}%)</span>`;
+        conclusionText = `🏆 <b>策略 A (信貸單筆) 勝出！</b><br>在付出相同現金流的情況下，策略 A 最終創造的帳面淨利比策略 B <b>多賺了 ${fNum(profitDiff)} 元</b> <span class="percent" style="color:#e74c3c;">(+${fRate(percentDiff)}%)</span>`;
       } else if (profitDiff < 0) {
-        conclusionText = `🏆 <b>策略 B (無借貸定額) 勝出！</b><br>因為借貸成本侵蝕獲利，策略 B 最終創造的淨利反而 <b>多賺了 ${fNum(Math.abs(profitDiff))} 元</b> <span class="percent" style="color:#2ecc71;">(${fRate(Math.abs(percentDiff))}%)</span>`;
+        conclusionText = `🏆 <b>策略 B (無借貸定額) 勝出！</b><br>因為借貸成本侵蝕獲利，策略 B 最終創造的帳面淨利反而 <b>多賺了 ${fNum(Math.abs(profitDiff))} 元</b> <span class="percent" style="color:#2ecc71;">(${fRate(Math.abs(percentDiff))}%)</span>`;
       } else {
         conclusionText = `⚖️ <b>平手！兩種策略最終淨利完全相同。</b><br>這代表借款利率恰好抵銷了投資報酬。`;
       }
-
       document.getElementById('topConclusion').innerHTML = conclusionText;
       document.getElementById('chartConclusion').innerHTML = conclusionText;
 
@@ -246,18 +248,19 @@
       document.getElementById('loanPhase1Asset').innerText = fNum(phase1AssetA);
       document.getElementById('loanFinalAsset').innerText = fNum(finalAssetA);
       document.getElementById('loanNetProfit').innerText = fNum(netProfitA);
+      document.getElementById('loanRealAsset').innerText = fNum(realFinalAssetA) + " 元"; // 通膨折現結果
 
       document.getElementById('dcaTotalCost').innerText = fNum(totalCashOutPocket);
       document.getElementById('dcaPhase1Asset').innerText = fNum(phase1AssetB);
       document.getElementById('dcaFinalAsset').innerText = fNum(finalAssetB);
       document.getElementById('dcaNetProfit').innerText = fNum(netProfitB);
+      document.getElementById('dcaRealAsset').innerText = fNum(realFinalAssetB) + " 元"; // 通膨折現結果
 
-      // --- 5. 渲染算式解析 (已將所有公式完整補回) ---
+      // --- 5. 渲染算式解析 ---
       const rM_invest = (monthlyInvestRate).toFixed(6);
       let mathHtml = '';
       const pmtStr = Math.round(monthlyPMT);
 
-      // 防呆處理：如果信貸利率為0，公式會不一樣
       if (monthlyLoanRate === 0) {
           mathHtml += `
             <strong>【每月鎖定現金流 (無息貸款)】</strong>
@@ -281,20 +284,24 @@
         ↳ 總成本 = ${fNum(initialAmount)} + (${fNum(pmtStr)} × ${months1})<br>
         ↳ 最終結算總掏出: <b>${fNum(totalCashOutPocket)} 元</b><br>
 
-        <strong>【策略 A (信貸) 第一階段期末資產計算】</strong>
+        <strong>【策略 A (信貸) 期末資產計算】</strong>
         <div class="math-formula">FV = (自有資金+借款總額) × (1+投資月利率)^總期數</div>
         ↳ FV_A = (${fNum(initialAmount)} + ${fNum(loanAmount)}) × (1 + ${rM_invest})^${months1}<br>
-        ↳ 結算金額: <b>${fNum(phase1AssetA)} 元</b><br>
+        ↳ 第一階段結算: <b>${fNum(phase1AssetA)} 元</b><br>
 
-        <strong>【策略 B (定額) 第一階段期末資產計算】</strong>
+        <strong>【策略 B (定額) 期末資產計算】</strong>
         <div class="math-formula">FV = [自有資金 × (1+投資月利率)^期數] + [月定額 × ((1+投資月利率)^期數 - 1) ÷ 投資月利率]</div>
         ↳ FV_B = [${fNum(initialAmount)} × (1 + ${rM_invest})^${months1}] + [${fNum(pmtStr)} × ((1 + ${rM_invest})^${months1} - 1) ÷ ${rM_invest}]<br>
-        ↳ 結算金額: <b>${fNum(phase1AssetB)} 元</b><br>
-      `;
+        ↳ 第一階段結算: <b>${fNum(phase1AssetB)} 元</b><br>
 
+        <strong>【實質購買力 (通膨折現現值) 計算】</strong>
+        <div class="math-formula" style="color:#8e44ad;">實質價值 = 名目最終資產 ÷ (1 + 通膨年利率)^總年數</div>
+        ↳ 策略 A 折現 = ${fNum(finalAssetA)} ÷ (1 + ${inflationRate})^${totalYears} = <b>${fNum(realFinalAssetA)} 元</b><br>
+        ↳ 這代表未來的 ${fNum(finalAssetA)} 元，大約只能買到現在價值 ${fNum(realFinalAssetA)} 元的東西。
+      `;
       document.getElementById('mathContent').innerHTML = mathHtml;
 
-      // --- 6. 渲染年度變化表 ---
+      // --- 6. 渲染年度變化表 (維持帳面價值，避免混淆) ---
       let tableHtml = '';
       for(let i=1; i<historyData.length; i++) {
         let row = historyData[i];
@@ -324,64 +331,20 @@
           data: {
               labels: labels,
               datasets: [
-                  {
-                      label: '策略 A 資產 (信貸)',
-                      data: dataAssetA,
-                      borderColor: '#f39c12',
-                      backgroundColor: 'rgba(243, 156, 18, 0.1)',
-                      borderWidth: 3,
-                      tension: 0.1,
-                      fill: true
-                  },
-                  {
-                      label: '策略 B 資產 (定額)',
-                      data: dataAssetB,
-                      borderColor: '#2ecc71',
-                      backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                      borderWidth: 3,
-                      tension: 0.1,
-                      fill: true
-                  },
-                  {
-                      label: '總投入成本 (A與B相同)',
-                      data: dataCost,
-                      borderColor: '#7f8c8d',
-                      borderDash: [5, 5],
-                      borderWidth: 2,
-                      pointRadius: 0,
-                      fill: false
-                  }
+                  { label: '策略 A 帳面資產 (信貸)', data: dataAssetA, borderColor: '#f39c12', backgroundColor: 'rgba(243, 156, 18, 0.1)', borderWidth: 3, tension: 0.1, fill: true },
+                  { label: '策略 B 帳面資產 (定額)', data: dataAssetB, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', borderWidth: 3, tension: 0.1, fill: true },
+                  { label: '總投入成本 (A與B相同)', data: dataCost, borderColor: '#7f8c8d', borderDash: [5, 5], borderWidth: 2, pointRadius: 0, fill: false }
               ]
           },
           options: {
               responsive: true,
-              interaction: {
-                  mode: 'index',
-                  intersect: false,
-              },
-              plugins: {
-                  tooltip: {
-                      callbacks: {
-                          label: function(context) {
-                              return context.dataset.label + ': ' + Math.round(context.raw).toLocaleString('zh-TW') + ' 元';
-                          }
-                      }
-                  }
-              },
-              scales: {
-                  y: {
-                      beginAtZero: false,
-                      ticks: {
-                          callback: function(value) {
-                              return value.toLocaleString('zh-TW');
-                          }
-                      }
-                  }
-              }
+              interaction: { mode: 'index', intersect: false },
+              plugins: { tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + Math.round(context.raw).toLocaleString('zh-TW') + ' 元'; } } } },
+              scales: { y: { beginAtZero: false, ticks: { callback: function(value) { return value.toLocaleString('zh-TW'); } } } }
           }
       });
 
-      // 顯示隱藏的區塊
+      // 顯示隱藏區塊
       document.getElementById('topConclusion').style.display = 'block';
       document.getElementById('resultBox').style.display = 'grid';
       document.getElementById('mathBox').style.display = 'block';
