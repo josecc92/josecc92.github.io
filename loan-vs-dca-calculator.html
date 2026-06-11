@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>終極版投資策略試算 | 包含算式、表格與走勢圖</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; padding: 40px 20px; display: flex; justify-content: center; }
+    .calculator { background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); width: 100%; max-width: 1000px; }
+    h2 { text-align: center; color: #333; margin-top: 0; margin-bottom: 25px; }
+    
+    .section-title { font-size: 16px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 15px; margin-top: 20px; font-weight: bold; }
+    
+    .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    @media (max-width: 600px) { .input-grid { grid-template-columns: 1fr; } }
+    
+    .form-group { margin-bottom: 10px; }
+    label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; font-size: 14px; }
+    .hint { font-size: 12px; color: #777; margin-bottom: 5px; }
+    input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; background-color: #fafafa; }
+    input:focus { border-color: #3498db; outline: none; }
+    
+    button { width: 100%; padding: 15px; background: #34495e; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; font-weight: bold; margin-top: 25px; transition: background 0.3s; letter-spacing: 1px; }
+    button:hover { background: #2c3e50; }
+    
+    .result-container { margin-top: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; display: none; }
+    @media (max-width: 600px) { .result-container { grid-template-columns: 1fr; } }
+    .result-card { padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .card-loan { background: #fffcf5; border-top: 5px solid #f39c12; }
+    .card-dca { background: #f4fdf8; border-top: 5px solid #2ecc71; }
+    .result-card h3 { margin-top: 0; text-align: center; font-size: 18px; color: #333; margin-bottom: 15px; }
+    .result-card p { margin: 12px 0; font-size: 14px; color: #555; display: flex; justify-content: space-between; border-bottom: 1px dashed #e0e0e0; padding-bottom: 5px; }
+    .result-card span { font-size: 16px; color: #000; font-weight: bold; }
+    .highlight { color: #e74c3c !important; font-size: 18px !important; }
+    
+    .math-box { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; border-left: 5px solid #6c757d; font-family: 'Courier New', Courier, monospace; font-size: 14px; line-height: 1.6; display: none; overflow-x: auto;}
+    .math-box strong { color: #2c3e50; font-family: 'Segoe UI', Tahoma, sans-serif; display: block; margin-top: 15px; font-size: 15px; }
+    .math-formula { color: #d35400; font-weight: bold; margin-bottom: 5px;}
+    
+    /* 表格容器加入橫向滾動，避免手機版破版 */
+    .table-responsive { width: 100%; overflow-x: auto; display: none; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 8px; }
+    table { width: 100%; min-width: 700px; border-collapse: collapse; font-size: 14px; text-align: right; background: white; }
+    th, td { padding: 12px 15px; border-bottom: 1px solid #eee; }
+    th { background-color: #34495e; color: white; text-align: center; }
+    tr:hover { background-color: #f5f6fa; }
+    .col-year { text-align: center; font-weight: bold; }
+    .col-cost { color: #7f8c8d; font-weight: bold; }
+    .col-loan { color: #d35400; font-weight: bold; }
+    .col-dca { color: #27ae60; font-weight: bold; }
+    
+    /* 折線圖容器 */
+    .chart-container { width: 100%; margin-top: 30px; padding-top: 20px; border-top: 2px dashed #ddd; display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="calculator">
+    <h2>終極版：信貸槓桿 vs 定期定額 比較面板</h2>
+    
+    <div class="section-title">一、資金與報酬設定</div>
+    <div class="input-grid">
+      <div class="form-group">
+        <label>目前已持有資金 (元)</label>
+        <input type="number" id="initialAmount" value="500000" min="0" step="10000">
+      </div>
+      <div class="form-group">
+        <label>預計信貸總額 (元)</label>
+        <input type="number" id="loanAmount" value="1790000" min="0" step="10000">
+      </div>
+      <div class="form-group">
+        <label>信貸年利率 (%)</label>
+        <input type="number" id="loanRate" value="3.5" min="0" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>預期投資年化報酬 (%)</label>
+        <input type="number" id="investRate" value="6" min="0" step="0.1">
+      </div>
+    </div>
+    
+    <div class="section-title">二、兩階段時間設定</div>
+    <div class="input-grid">
+      <div class="form-group">
+        <label>第一階段：還款/投入期 (年)</label>
+        <input type="number" id="phase1Years" value="4" min="1">
+      </div>
+      <div class="form-group">
+        <label>第二階段：停扣後放置期 (年)</label>
+        <input type="number" id="phase2Years" value="5" min="0">
+      </div>
+    </div>
+    
+    <button onclick="calculateComparison()">執行策略比較試算</button>
+
+    <div class="result-container" id="resultBox">
+      <div class="result-card card-loan">
+        <h3>策略 A：信貸單筆投入</h3>
+        <p>真實掏出總成本：<span id="loanTotalCost">0</span></p>
+        <p>第一階段結束資產：<span id="loanPhase1Asset">0</span></p>
+        <p>最終總資產 (期末)：<span id="loanFinalAsset">0</span></p>
+        <p>最終淨利潤：<span id="loanNetProfit" class="highlight">0</span></p>
+      </div>
+      <div class="result-card card-dca">
+        <h3>策略 B：無借貸定期定額</h3>
+        <p>真實掏出總成本：<span id="dcaTotalCost">0</span></p>
+        <p>第一階段結束資產：<span id="dcaPhase1Asset">0</span></p>
+        <p>最終總資產 (期末)：<span id="dcaFinalAsset">0</span></p>
+        <p>最終淨利潤：<span id="dcaNetProfit" class="highlight">0</span></p>
+      </div>
+    </div>
+
+    <div class="math-box" id="mathBox">
+      <h3 style="margin-top:0; color:#333; font-family:'Segoe UI', sans-serif;">底層算式解析 (代入實際數字)</h3>
+      <div id="mathContent"></div>
+    </div>
+
+    <div class="chart-container" id="chartBox">
+      <canvas id="strategyChart"></canvas>
+    </div>
+
+    <div class="table-responsive" id="tableBox">
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th class="col-year">年度</th>
+            <th>階段狀態</th>
+            <th>累積掏出成本 (A與B相同)</th>
+            <th class="col-loan">策略 A (信貸) 累積資產</th>
+            <th class="col-dca">策略 B (定額) 累積資產</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    let myChart = null; // 全域變數儲存圖表實例，避免重複繪製重疊
+
+    function calculateComparison() {
+      // 1. 取得參數
+      const initialAmount = parseFloat(document.getElementById('initialAmount').value) || 0;
+      const loanAmount = parseFloat(document.getElementById('loanAmount').value) || 0;
+      const loanRate = parseFloat(document.getElementById('loanRate').value) / 100;
+      const investRate = parseFloat(document.getElementById('investRate').value) / 100;
+      const phase1Years = parseInt(document.getElementById('phase1Years').value) || 0;
+      const phase2Years = parseInt(document.getElementById('phase2Years').value) || 0;
+
+      const months1 = phase1Years * 12;
+      const months2 = phase2Years * 12;
+      const totalMonths = months1 + months2;
+      const monthlyLoanRate = loanRate / 12;
+      const monthlyInvestRate = investRate / 12;
+      
+      // 2. 計算每月固定現金流 (PMT)
+      let monthlyPMT = 0;
+      if (monthlyLoanRate === 0) {
+        monthlyPMT = loanAmount / months1;
+      } else {
+        const powFactor = Math.pow(1 + monthlyLoanRate, months1);
+        monthlyPMT = loanAmount * (monthlyLoanRate * powFactor) / (powFactor - 1);
+      }
+      const totalCashOutPocket = initialAmount + (monthlyPMT * months1);
+
+      // --- 陣列準備 (給表格與圖表使用) ---
+      let historyData = [];
+      let currentAssetA = initialAmount + loanAmount;
+      let currentAssetB = initialAmount;
+      let currentCost = initialAmount;
+
+      // 為了畫圖在「第0年」的起始點
+      historyData.push({
+        year: 0,
+        phaseText: "起步",
+        assetA: currentAssetA,
+        assetB: currentAssetB,
+        cost: currentCost
+      });
+
+      // 3. 逐月推演計算
+      for (let m = 1; m <= totalMonths; m++) {
+        // 策略 A 變化 (純複利)
+        currentAssetA = currentAssetA * (1 + monthlyInvestRate);
+        
+        // 策略 B 與 成本 變化
+        if (m <= months1) {
+          currentAssetB = currentAssetB * (1 + monthlyInvestRate) + monthlyPMT;
+          currentCost += monthlyPMT;
+        } else {
+          currentAssetB = currentAssetB * (1 + monthlyInvestRate);
+        }
+
+        // 滿一年紀錄一次數據
+        if (m % 12 === 0) {
+          const year = m / 12;
+          const phaseText = year <= phase1Years ? "第一階段 (投入/還款)" : "第二階段 (放置滾息)";
+          historyData.push({
+            year: year,
+            phaseText: phaseText,
+            assetA: currentAssetA,
+            assetB: currentAssetB,
+            cost: currentCost
+          });
+        }
+      }
+
+      // 提取最終結果
+      const phase1AssetA = historyData[phase1Years]?.assetA || currentAssetA;
+      const phase1AssetB = historyData[phase1Years]?.assetB || currentAssetB;
+      const finalAssetA = currentAssetA;
+      const finalAssetB = currentAssetB;
+      const netProfitA = finalAssetA - totalCashOutPocket;
+      const netProfitB = finalAssetB - totalCashOutPocket;
+
+      // 4. 更新畫面文字
+      const fNum = (num) => Math.round(num).toLocaleString('zh-TW');
+      const fRate = (rate) => (rate).toFixed(6);
+
+      document.getElementById('loanTotalCost').innerText = fNum(totalCashOutPocket);
+      document.getElementById('loanPhase1Asset').innerText = fNum(phase1AssetA);
+      document.getElementById('loanFinalAsset').innerText = fNum(finalAssetA);
+      document.getElementById('loanNetProfit').innerText = fNum(netProfitA);
+
+      document.getElementById('dcaTotalCost').innerText = fNum(totalCashOutPocket);
+      document.getElementById('dcaPhase1Asset').innerText = fNum(phase1AssetB);
+      document.getElementById('dcaFinalAsset').innerText = fNum(finalAssetB);
+      document.getElementById('dcaNetProfit').innerText = fNum(netProfitB);
+
+      // --- 5. 渲染算式解析 ---
+      const rM_invest = fRate(monthlyInvestRate);
+      const rM_loan = fRate(monthlyLoanRate);
+      const pmtStr = Math.round(monthlyPMT);
+
+      const mathHtml = `
+        <strong>【每月鎖定現金流 (信貸本息均攤)】</strong>
+        <div class="math-formula">PMT = 貸款總額 × [月利率 × (1+月利率)^期數] ÷ [(1+月利率)^期數 - 1]</div>
+        ↳ PMT = ${fNum(loanAmount)} × [${rM_loan} × (1+${rM_loan})^${months1}] ÷ [(1+${rM_loan})^${months1} - 1]<br>
+        ↳ 每月需掏出基準: <b>${fNum(pmtStr)} 元</b><br>
+
+        <strong>【真實掏出總成本計算】</strong>
+        <div class="math-formula">總成本 = 自有初始資金 + (每月固定現金流 × 第一階段總月數)</div>
+        ↳ 總成本 = ${fNum(initialAmount)} + (${fNum(pmtStr)} × ${months1})<br>
+        ↳ 最終結算總掏出: <b>${fNum(totalCashOutPocket)} 元</b><br>
+
+        <strong>【策略 A (信貸) 第一階段期末資產計算】</strong>
+        <div class="math-formula">FV = (自有資金+借款總額) × (1+投資月利率)^總期數</div>
+        ↳ FV_A = (${fNum(initialAmount)} + ${fNum(loanAmount)}) × (1 + ${rM_invest})^${months1}<br>
+        ↳ 結算金額: <b>${fNum(phase1AssetA)} 元</b><br>
+
+        <strong>【策略 B (定額) 第一階段期末資產計算】</strong>
+        <div class="math-formula">FV = [自有資金 × (1+投資月利率)^期數] + [月定額 × ((1+投資月利率)^期數 - 1) ÷ 投資月利率]</div>
+        ↳ FV_B = [${fNum(initialAmount)} × (1 + ${rM_invest})^${months1}] + [${fNum(pmtStr)} × ((1 + ${rM_invest})^${months1} - 1) ÷ ${rM_invest}]<br>
+        ↳ 結算金額: <b>${fNum(phase1AssetB)} 元</b><br>
+      `;
+      document.getElementById('mathContent').innerHTML = mathHtml;
+
+      // --- 6. 渲染年度變化表 ---
+      let tableHtml = '';
+      // 從第1年開始印在表格
+      for(let i=1; i<historyData.length; i++) {
+        let row = historyData[i];
+        tableHtml += `
+          <tr>
+            <td class="col-year">第 ${row.year} 年</td>
+            <td style="text-align:center; font-size: 13px; color: #7f8c8d;">${row.phaseText}</td>
+            <td class="col-cost">${fNum(row.cost)}</td>
+            <td class="col-loan">${fNum(row.assetA)}</td>
+            <td class="col-dca">${fNum(row.assetB)}</td>
+          </tr>
+        `;
+      }
+      document.getElementById('tableBody').innerHTML = tableHtml;
+
+      // --- 7. 繪製 Chart.js 走勢圖 ---
+      const labels = historyData.map(d => `第 ${d.year} 年`);
+      const dataCost = historyData.map(d => d.cost); // 兩者成本重疊
+      const dataAssetA = historyData.map(d => d.assetA);
+      const dataAssetB = historyData.map(d => d.assetB);
+
+      const ctx = document.getElementById('strategyChart').getContext('2d');
+      
+      // 如果圖表已存在，先銷毀避免重疊
+      if (myChart) {
+          myChart.destroy();
+      }
+
+      myChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: labels,
+              datasets: [
+                  {
+                      label: '策略 A 資產 (信貸)',
+                      data: dataAssetA,
+                      borderColor: '#f39c12',
+                      backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                      borderWidth: 3,
+                      tension: 0.1,
+                      fill: true
+                  },
+                  {
+                      label: '策略 B 資產 (定額)',
+                      data: dataAssetB,
+                      borderColor: '#2ecc71',
+                      backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                      borderWidth: 3,
+                      tension: 0.1,
+                      fill: true
+                  },
+                  {
+                      label: '策略 A 掏出成本',
+                      data: dataCost,
+                      borderColor: '#d35400',
+                      borderDash: [5, 5], // 短虛線
+                      borderWidth: 2,
+                      pointRadius: 0,
+                      fill: false
+                  },
+                  {
+                      label: '策略 B 掏出成本',
+                      data: dataCost,
+                      borderColor: '#27ae60',
+                      borderDash: [15, 5], // 長虛線 (與A重疊時依然可辨識)
+                      borderWidth: 2,
+                      pointRadius: 0,
+                      fill: false
+                  }
+              ]
+          },
+          options: {
+              responsive: true,
+              interaction: {
+                  mode: 'index',
+                  intersect: false,
+              },
+              plugins: {
+                  tooltip: {
+                      callbacks: {
+                          label: function(context) {
+                              return context.dataset.label + ': ' + Math.round(context.raw).toLocaleString('zh-TW') + ' 元';
+                          }
+                      }
+                  }
+              },
+              scales: {
+                  y: {
+                      beginAtZero: false,
+                      ticks: {
+                          callback: function(value) {
+                              return value.toLocaleString('zh-TW'); // 讓 Y 軸數字顯示千分位
+                          }
+                      }
+                  }
+              }
+          }
+      });
+
+      // 顯示隱藏的區塊
+      document.getElementById('resultBox').style.display = 'grid';
+      document.getElementById('mathBox').style.display = 'block';
+      document.getElementById('chartBox').style.display = 'block';
+      document.getElementById('tableBox').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
