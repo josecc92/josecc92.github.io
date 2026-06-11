@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>終極版投資策略試算 | 包含算式、表格與走勢圖</title>
+  <title>終極版投資策略試算 | 包含完整算式、表格與走勢圖</title>
   
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -71,7 +71,7 @@
       </div>
       <div class="form-group">
         <label>預計信貸總額 (元)</label>
-        <input type="number" id="loanAmount" value="1000000" min="0" step="10000">
+        <input type="number" id="loanAmount" value="1790000" min="0" step="10000">
       </div>
       <div class="form-group">
         <label>信貸年利率 (%)</label>
@@ -91,7 +91,7 @@
       </div>
       <div class="form-group">
         <label>第二階段：停扣後放置期 (年)</label>
-        <input type="number" id="phase2Years" value="6" min="0">
+        <input type="number" id="phase2Years" value="5" min="0">
       </div>
     </div>
     
@@ -218,12 +218,10 @@
       const netProfitA = finalAssetA - totalCashOutPocket;
       const netProfitB = finalAssetB - totalCashOutPocket;
 
-      // === 新增：計算勝出總結與百分比 ===
-      // 利潤差異計算 (策略A - 策略B)
+      // === 計算勝出總結與百分比 ===
       const profitDiff = netProfitA - netProfitB;
       let percentDiff = 0;
       
-      // 避免除以 0 的錯誤
       if (netProfitB !== 0) {
         percentDiff = (profitDiff / Math.abs(netProfitB)) * 100;
       }
@@ -240,10 +238,8 @@
         conclusionText = `⚖️ <b>平手！兩種策略最終淨利完全相同。</b><br>這代表借款利率恰好抵銷了投資報酬。`;
       }
 
-      // 將結論注入畫面
       document.getElementById('topConclusion').innerHTML = conclusionText;
       document.getElementById('chartConclusion').innerHTML = conclusionText;
-
 
       // 4. 更新畫面數字
       document.getElementById('loanTotalCost').innerText = fNum(totalCashOutPocket);
@@ -256,17 +252,46 @@
       document.getElementById('dcaFinalAsset').innerText = fNum(finalAssetB);
       document.getElementById('dcaNetProfit').innerText = fNum(netProfitB);
 
-      // --- 5. 渲染算式解析 ---
+      // --- 5. 渲染算式解析 (已將所有公式完整補回) ---
       const rM_invest = (monthlyInvestRate).toFixed(6);
-      const rM_loan = (monthlyLoanRate).toFixed(6);
+      let mathHtml = '';
       const pmtStr = Math.round(monthlyPMT);
 
-      const mathHtml = `
+      // 防呆處理：如果信貸利率為0，公式會不一樣
+      if (monthlyLoanRate === 0) {
+          mathHtml += `
+            <strong>【每月鎖定現金流 (無息貸款)】</strong>
+            <div class="math-formula">PMT = 貸款總額 ÷ 總期數</div>
+            ↳ PMT = ${fNum(loanAmount)} ÷ ${months1}<br>
+            ↳ 每月需掏出基準: <b>${fNum(pmtStr)} 元</b><br>
+          `;
+      } else {
+          const rM_loan = (monthlyLoanRate).toFixed(6);
+          mathHtml += `
+            <strong>【每月鎖定現金流 (信貸本息均攤)】</strong>
+            <div class="math-formula">PMT = 貸款總額 × [月利率 × (1+月利率)^期數] ÷ [(1+月利率)^期數 - 1]</div>
+            ↳ PMT = ${fNum(loanAmount)} × [${rM_loan} × (1+${rM_loan})^${months1}] ÷ [(1+${rM_loan})^${months1} - 1]<br>
+            ↳ 每月需掏出基準: <b>${fNum(pmtStr)} 元</b><br>
+          `;
+      }
+
+      mathHtml += `
         <strong>【真實掏出總成本計算】</strong>
         <div class="math-formula">總成本 = 自有初始資金 + (每月固定現金流 × 第一階段總月數)</div>
         ↳ 總成本 = ${fNum(initialAmount)} + (${fNum(pmtStr)} × ${months1})<br>
         ↳ 最終結算總掏出: <b>${fNum(totalCashOutPocket)} 元</b><br>
+
+        <strong>【策略 A (信貸) 第一階段期末資產計算】</strong>
+        <div class="math-formula">FV = (自有資金+借款總額) × (1+投資月利率)^總期數</div>
+        ↳ FV_A = (${fNum(initialAmount)} + ${fNum(loanAmount)}) × (1 + ${rM_invest})^${months1}<br>
+        ↳ 結算金額: <b>${fNum(phase1AssetA)} 元</b><br>
+
+        <strong>【策略 B (定額) 第一階段期末資產計算】</strong>
+        <div class="math-formula">FV = [自有資金 × (1+投資月利率)^期數] + [月定額 × ((1+投資月利率)^期數 - 1) ÷ 投資月利率]</div>
+        ↳ FV_B = [${fNum(initialAmount)} × (1 + ${rM_invest})^${months1}] + [${fNum(pmtStr)} × ((1 + ${rM_invest})^${months1} - 1) ÷ ${rM_invest}]<br>
+        ↳ 結算金額: <b>${fNum(phase1AssetB)} 元</b><br>
       `;
+
       document.getElementById('mathContent').innerHTML = mathHtml;
 
       // --- 6. 渲染年度變化表 ---
@@ -318,7 +343,6 @@
                       fill: true
                   },
                   {
-                      // 修改點：將兩條重疊的線合併為一條統一的成本線
                       label: '總投入成本 (A與B相同)',
                       data: dataCost,
                       borderColor: '#7f8c8d',
