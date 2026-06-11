@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>進階投資複利試算</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px 20px; display: flex; justify-content: center; }
+    .calculator { background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); width: 100%; max-width: 450px; }
+    h2 { text-align: center; color: #333; margin-top: 0; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; font-size: 14px; }
+    input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
+    button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; transition: background 0.3s; }
+    button:hover { background: #0056b3; }
+    .result { margin-top: 25px; padding: 20px; background: #e9ecef; border-radius: 5px; border-left: 5px solid #007bff; }
+    .result p { margin: 8px 0; font-size: 15px; color: #333; }
+    .result span { font-size: 18px; color: #000; font-weight: bold; }
+    .hint { font-size: 12px; color: #777; margin-top: 5px; }
+  </style>
+</head>
+<body>
+
+  <div class="calculator">
+    <h2>進階投資複利試算</h2>
+    
+    <div class="form-group">
+      <label for="initialAmount">目前已投入總額 (初始本金)</label>
+      <input type="number" id="initialAmount" value="500000" min="0" step="10000">
+      <div class="hint">目前已經在市場內的資金基準</div>
+    </div>
+    <div class="form-group">
+      <label for="monthlyAmount">後續每月投入金額 (元)</label>
+      <input type="number" id="monthlyAmount" value="10000" min="0" step="1000">
+    </div>
+    <div class="form-group">
+      <label for="annualRate">預期年化報酬率 (%)</label>
+      <input type="number" id="annualRate" value="6" min="0" step="0.1">
+    </div>
+    
+    <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+    
+    <div class="form-group">
+      <label for="investYears">第一階段：持續投入時間 (年)</label>
+      <input type="number" id="investYears" value="10" min="1">
+      <div class="hint">這段期間每個月都會扣款</div>
+    </div>
+    <div class="form-group">
+      <label for="holdYears">第二階段：停扣後繼續放置時間 (年)</label>
+      <input type="number" id="holdYears" value="5" min="0">
+      <div class="hint">不投入新資金，僅靠先前的本利和繼續複利</div>
+    </div>
+    
+    <button onclick="calculateCompound()">開始試算</button>
+
+    <div class="result" id="resultBox" style="display: none;">
+      <p>總投入本金：<span id="resPrincipal">0</span> 元</p>
+      <p>第一階段結束金額：<span id="resPhase1">0</span> 元</p>
+      <p>最終總金額：<span id="resTotal">0</span> 元</p>
+      <p style="color: #d9534f;">累積獲利：<span id="resProfit">0</span> 元</p>
+    </div>
+  </div>
+
+  <script>
+    function calculateCompound() {
+      const initialAmount = parseFloat(document.getElementById('initialAmount').value) || 0;
+      const monthlyAmount = parseFloat(document.getElementById('monthlyAmount').value) || 0;
+      const annualRate = parseFloat(document.getElementById('annualRate').value) / 100;
+      const investYears = parseInt(document.getElementById('investYears').value) || 0;
+      const holdYears = parseInt(document.getElementById('holdYears').value) || 0;
+
+      const investMonths = investYears * 12;
+      const holdMonths = holdYears * 12;
+      const monthlyRate = annualRate / 12;
+      
+      // 將「初始本金」作為起點
+      let totalAmount = initialAmount;
+      // 總本金 = 初始本金 + (每月投入 * 投入月數)
+      let totalPrincipal = initialAmount + (monthlyAmount * investMonths);
+
+      // 階段一：已有一筆資金在市場，同時持續定期定額
+      for (let i = 0; i < investMonths; i++) {
+        // 每個月的月底：原本的錢生息 + 新投入的錢
+        totalAmount = totalAmount * (1 + monthlyRate) + monthlyAmount;
+      }
+      
+      const phase1Amount = totalAmount;
+
+      // 階段二：停止投入，全額放著繼續生息
+      for (let i = 0; i < holdMonths; i++) {
+        totalAmount = totalAmount * (1 + monthlyRate);
+      }
+
+      const profit = totalAmount - totalPrincipal;
+
+      // 數字格式化工具
+      const formatCurrency = (num) => Math.round(num).toLocaleString('zh-TW');
+
+      document.getElementById('resPrincipal').innerText = formatCurrency(totalPrincipal);
+      document.getElementById('resPhase1').innerText = formatCurrency(phase1Amount);
+      document.getElementById('resTotal').innerText = formatCurrency(totalAmount);
+      document.getElementById('resProfit').innerText = formatCurrency(profit);
+      
+      document.getElementById('resultBox').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
