@@ -38,7 +38,7 @@
             margin: -30px auto 40px auto; /* 讓卡片往上稍微覆蓋橫幅，增加立體感 */
             padding: 0 20px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* 微調最小寬度以容納三張卡片 */
             gap: 25px;
         }
 
@@ -56,8 +56,8 @@
         }
 
         .nav-card.ur-project { border-top-color: #e74c3c; }
-        
         .nav-card.jcap-decrypter { border-top-color: #2ecc71; }
+        .nav-card.investment-calc { border-top-color: #f39c12; } /* 新增：計算機卡片的顏色 */
 
         .nav-card:hover {
             transform: translateY(-8px);
@@ -85,24 +85,25 @@
 </head>
 <body>
 
-    <!-- 頂部橫幅 -->
     <div class="hero">
         <h1>我的專案管理入口網</h1>
         <p>點選下方區塊進入各專案文件庫</p>
     </div>
 
-    <!-- 卡片導覽區 -->
     <div class="container">
         
-        <!-- 連結 1：指向你的「都更文件列表」 -->
-        <!-- 💡 注意：這邊的 href 指向我們上一篇做的列表頁面 -->
         <a href="markdown/markdown-viewer.html" class="nav-card ur-project">
             <div class="icon">🏘️</div>
             <h2>都市更新專案</h2>
             <p>包含法規試算、會議記錄、地主意願調查及進度追蹤報告。</p>
         </a>
 
-        <!-- 連結 2：未來如果有其他專案，可以放這裡 (目前為暫時連結) -->
+        <a href="compound_interest.html" class="nav-card investment-calc">
+            <div class="icon">📈</div>
+            <h2>投資複利試算</h2>
+            <p>支援初始基準金額、後續定期定額、以及投入與停扣雙階段的複利試算工具。</p>
+        </a>
+
         <a href="jcap-decrypter.html" class="nav-card jcap-decrypter">
             <div class="icon">📄</div>
             <h2>其他專案</h2>
