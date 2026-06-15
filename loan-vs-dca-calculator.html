@@ -297,7 +297,9 @@
         <strong>【實質購買力 (通膨折現現值) 計算】</strong>
         <div class="math-formula" style="color:#8e44ad;">實質價值 = 名目最終資產 ÷ (1 + 通膨年利率)^總年數</div>
         ↳ 策略 A 折現 = ${fNum(finalAssetA)} ÷ (1 + ${inflationRate})^${totalYears} = <b>${fNum(realFinalAssetA)} 元</b><br>
-        ↳ 這代表未來的 ${fNum(finalAssetA)} 元，大約只能買到現在價值 ${fNum(realFinalAssetA)} 元的東西。
+        ↳ 這代表未來的 ${fNum(finalAssetA)} 元，大約只能買到現在價值 ${fNum(realFinalAssetA)} 元的東西。</b><br>
+        ↳ 策略 B 折現 = ${fNum(finalAssetB)} ÷ (1 + ${inflationRate})^${totalYears} = <b>${fNum(realFinalAssetB)} 元</b><br>
+        ↳ 這代表未來的 ${fNum(finalAssetB)} 元，大約只能買到現在價值 ${fNum(realFinalAssetB)} 元的東西。		
       `;
       document.getElementById('mathContent').innerHTML = mathHtml;
 
