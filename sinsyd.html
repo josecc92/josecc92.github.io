@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雙城奇幻大探險：雪梨 ╳ 新加坡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+        body {
+            background-color: #f4eee8; /* 溫暖的紙張背景色 */
+            font-family: 'Nunito', 'Noto Sans TC', sans-serif;
+            color: #3f3f46;
+        }
+
+        .book-container {
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.02);
+            perspective: 1000px;
+        }
+
+        /* 中間書脊陰影 */
+        .book-spine-shadow {
+            box-shadow: inset -10px 0 20px rgba(0,0,0,0.04);
+        }
+        .book-spine-shadow-right {
+            box-shadow: inset 10px 0 20px rgba(0,0,0,0.04);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 250px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 250px;
+        }
+
+        /* 自定義按鈕特效 */
+        .nav-btn {
+            transition: all 0.2s ease;
+        }
+        .nav-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            background-color: #fde047;
+            color: #854d0e;
+        }
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+
+    <!-- Chosen Palette: 溫馨手繪粉彩色系 (Warm Pastel Neutrals) - 背景：#f4eee8 (暖紙張色)，點綴色：#fbcfe8 (櫻花粉)、#bae6fd (天空藍)、#fef08a (陽光黃)，文字：#3f3f46 (深岩灰) -->
+
+    <!-- Application Structure Plan: 
+    此 SPA 採用「數位互動繪本 (Digital Storybook)」結構。
+    1. 佈局：採用模擬實體書本的 1:1 左右跨頁設計 (Left: Image, Right: Text)。
+    2. 導航：底部中央與兩側皆設有翻頁按鈕，提供線性閱讀體驗。
+    3. 內容：根據提供的 Markdown 內容，切分為 12 個跨頁 (Spread)，包含封面、總表與 Day 1-10。
+    4. 互動：透過 JavaScript 動態切換 DOM 內容，達成不需重新載入頁面即可翻閱整本書的流暢體驗。此結構完美契合使用者要求「左圖右文」、「分頁功能」的旅行書需求。 -->
+
+    <!-- Visualization & Content Choices: 
+    1. 內容：10天行程類型分佈 (在行程總表頁) -> 目標：總結與呈現旅程多樣性 -> 呈現：甜甜圈圖 (Chart.js) -> 互動：Hover 顯示細節 -> 理由：在純文字總表中加入視覺化的活動比例，增添數據趣味，同時符合強制使用 JS Library 規範 -> 方法：Chart.js (Canvas) 
+    2. 內容：每日 AI 圖片佔位符 -> 目標：版面規劃 -> 呈現：粉彩背景與虛線框 (HTML/CSS) -> 互動：純展示 -> 理由：保留未來替換真實生成圖片的空間，並直接展示對應的 Prompt 方便對照 -> 方法：HTML/Tailwind (無 SVG) -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- 書本標題區 -->
+    <div class="mb-6 text-center">
+        <h1 class="text-3xl font-bold text-slate-700 tracking-wider">雙城奇幻大探險 <span class="text-xl font-normal text-slate-500">| 我們的家庭旅遊書</span></h1>
+    </div>
+
+    <!-- 書本主體 -->
+    <div class="relative w-full max-w-6xl h-[650px] bg-white rounded-xl book-container flex flex-col md:flex-row overflow-hidden">
+        
+        <!-- 左頁：圖片區 -->
+        <div class="w-full md:w-1/2 h-1/2 md:h-full bg-slate-50 relative book-spine-shadow flex flex-col items-center justify-center p-8 border-b md:border-b-0 md:border-r border-slate-200 transition-colors duration-500" id="left-page">
+            <!-- 這裡將動態插入圖片佔位與提示詞 -->
+        </div>
+
+        <!-- 右頁：文字區 -->
+        <div class="w-full md:w-1/2 h-1/2 md:h-full bg-white relative book-spine-shadow-right p-8 md:p-12 overflow-y-auto flex flex-col" id="right-page">
+            <!-- 這裡將動態插入文字內容與圖表 -->
+        </div>
+
+        <!-- 絕對定位的翻頁按鈕 (電腦版置於兩側) -->
+        <button id="btn-prev-side" class="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/80 rounded-full items-center justify-center shadow-md nav-btn text-2xl z-10" onclick="prevPage()">
+            ◀
+        </button>
+        <button id="btn-next-side" class="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/80 rounded-full items-center justify-center shadow-md nav-btn text-2xl z-10" onclick="nextPage()">
+            ▶
+        </button>
+
+    </div>
+
+    <!-- 底部控制列 -->
+    <div class="mt-8 flex items-center justify-between w-full max-w-md bg-white px-6 py-3 rounded-full shadow-sm border border-slate-200">
+        <button id="btn-prev" class="nav-btn px-4 py-2 rounded-full font-bold text-slate-600 bg-slate-100" onclick="prevPage()">◀ 上一頁</button>
+        <span id="page-indicator" class="text-slate-500 font-semibold tracking-widest text-sm">P.1 / 12</span>
+        <button id="btn-next" class="nav-btn px-4 py-2 rounded-full font-bold text-slate-600 bg-slate-100" onclick="nextPage()">下一頁 ▶</button>
+    </div>
+
+    <script>
+        // 書本資料結構：依據提供的 Markdown 內容整理
+        const bookData = [
+            {
+                id: "cover",
+                bgColor: "bg-pink-50",
+                prompt: "An Asian family of four (parents and two little girls aged 6 and 3) exploring happily. The background features a blend of the Sydney Opera House and the Singapore Jewel indoor waterfall. Lots of clean negative space. Bright sunny day, Cute hand-drawn journal style, pastel colors. --ar 3:4",
+                title: "南半球冬日 ╳ 赤道夏日的大探險",
+                subtitle: "雪梨與新加坡的雙城奇幻旅程",
+                date: "2026.08.21 - 08.30",
+                role: "爸爸、媽媽、翊茜、豆沙",
+                content: "準備好推車，帶上好奇心！這是一本屬於我們全家人的數位互動旅遊書。翻開下一頁，跟著我們一起出發吧！"
+            },
+            {
+                id: "summary",
+                bgColor: "bg-blue-50",
+                prompt: "An Asian family of four (parents and two little girls aged 6 and 3) exploring happily. Looking excitedly at a cute wooden directional signpost pointing to \"Sydney\" and \"Singapore\". Lots of clean negative space. Bright sunny day, Cute hand-drawn journal style, pastel colors. --ar 3:4",
+                title: "✈️ 我們的 10 天冒險地圖",
+                subtitle: "準備好推車，帶上好奇心，出發囉！",
+                date: "",
+                role: "",
+                content: `
+                    <ul class="space-y-2 mt-4 text-slate-600 text-sm md:text-base">
+                        <li><strong>Day 1-2：</strong> 飛向雪梨，吃海鮮看大船！</li>
+                        <li><strong>Day 3：</strong> 走進魔法學院與市集尋寶。</li>
+                        <li><strong>Day 4-5：</strong> 乘風破浪找鯨魚，樂園與動物大集合。</li>
+                        <li><strong>Day 6-7：</strong> 無尾熊見面會，藍山深呼吸。</li>
+                        <li><strong>Day 8：</strong> 城市巡禮，跟雪梨說掰掰。</li>
+                        <li><strong>Day 9：</strong> 獅城快閃！環球影城大冒險。</li>
+                        <li><strong>Day 10：</strong> 帶著甜甜的回憶，平安回家！</li>
+                    </ul>
+                    <div class="mt-8 pt-6 border-t border-slate-100">
+                        <h4 class="text-center font-bold text-slate-500 mb-2 text-sm">📊 行程豐富度分析</h4>
+                        <div class="chart-container">
+                            <canvas id="summaryChart"></canvas>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                id: "day1",
+                bgColor: "bg-yellow-50",
+                prompt: "An Asian family of four (parents and two little girls aged 6 and 3) exploring happily. Standing at the airport with their suitcases, looking at a bright yellow airplane ready to take off. Lots of clean negative space. Bright sunny day, Cute hand-drawn journal style, pastel colors. --ar 3:4",
+                title: "Day 1 🛫 啟程出發",
+                subtitle: "08/21 五",
+                date: "",
+                role: "",
+                content: `
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">「準備起飛囉！前往南半球的奇幻之旅」</h3>
+                    <p class="text-slate-600 leading-relaxed mb-6">
+                        拉著行李箱，推著我們專屬的兩台小推車，深夜的機場充滿了期待的味道！我們搭上亮黃色的飛機，準備先飛往熱熱的新加坡轉機。
+                    </p>
+                    <p class="text-slate-500 italic">
+                        *在飛機上乖乖睡一覺，醒來就會看見不一樣的天空喔！*
+                    </p>
+                    <div class="mt-auto pt-6 border-t border-slate-100">
+                        <p class="text-sm font-semibold text-slate-500">📍 行程小記：</p>
+                        <p class="text-sm text-slate-500 mt-1">出發： 搭乘酷航 TR867 班機前往新加坡。<br>過夜： 深夜抵達樟宜機場，機場內短暫休息準備轉機。</p>
+                    </div>
+                `
+            },
+            {
+                id: "day2",
+                bgColor: "bg-cyan-50",
+                prompt: "An Asian family of four (parents and two little girls aged 6 and 3) exploring happily. Strolling along Sydney Darling Harbour, with a large vintage naval ship HMAS Vampire and fresh seafood in the background. Lots of clean negative space. Bright sunny day, Cute hand-drawn journal style, pastel colors. --ar 3:4",
+                title: "Day 2 🚢 雪梨港灣初見面",
+                subtitle: "08/22 六",
+                date: "",
+                role: "",
+                content: `
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">「哈囉雪梨！大船與海鮮的見面禮」</h3>
+                    <p class="text-slate-600 leading-relaxed mb-6">
+                        咻～我們抵達有點微涼的雪梨啦！下午在達令港散步，還登上超酷的「吸血鬼號」軍艦探險。到了晚上，我們在魚市場大口品嚐南半球最新鮮的海味，肚子吃得圓滾滾的。
+                    </p>
+                    <div class="mt-auto pt-6 border-t border-slate-100">
+                        <p class="text-sm font-semibold text-slate-500">📍 行程小記：</p>
+                        <ul class="text-sm text-slate-500 mt-1 list-disc pl-4 space-y-1">
+                            <li>上午：抵達雪梨 👉 Central (中央車站)</li>
+                            <li>下午：達令港漫步 👉 吸血鬼號 (HMAS Vampire)</li>
+                            <li>晚上：雪梨魚市場 (Seafood Market) 享用海味</li>
+                            <li>住宿：入住 Mercure Sydney</li>
+                        </ul>
+                    </div>
+                `
+            },
+            {
+                id: "day3",
+                bgColor: "bg-emerald-50",
+                prompt: "An Asian family of four (parents and two little girls aged 6 and 3) exploring happily. Standing on a vast green lawn looking at the beautiful Gothic Revival style building of The Quadrangle at The University of Sydney. Lots of clean negative space. Bright sunny day, Cute hand-drawn journal style, pastel colors. --ar 3:4",
+                title: "Day 3 🏛️ 學院鐘聲與市集尋寶",
+                subtitle: "08/23 日",
+                date: "",
+                role: "",
+                content: `
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">「走進魔法學院！在草地上奔跑的午後」</h3>
+                    <p class="text-slate-600 leading-relaxed mb-6">
+                        今天我們來到雪梨大學，這裡的建築簡直就像《哈利波特》裡的魔法學校！我們在廣闊的草地上奔跑，中午吃飽後，穿梭在熱鬧的岩石區市集尋寶，傍晚沿著環形碼頭散步，吹著舒服的海風。
+                    </p>
+                    <div class="mt-auto pt-6 border-t border-slate-100">
+                        <p class="text-sm font-semibold text-slate-500">📍 行程小記：</p>
+                        <ul class="text-sm text-slate-500 mt-1 list-disc pl-4 space-y-1">
+                            <li>上午：雪梨大學 (The Quadrangle) 👉 Chau Chak Wing Museum (12:00 開門)</li>
+                            <li>中午：Devon Cafe Barangaroo</li>
+                            <li>下午：雪梨天文台 👉 岩石區市集 👉 環形碼頭</li>
+                            <li>住宿：轉移陣地，入住 The York by Swiss-Belhotel</li>
+                        </ul>
+                    </div>
+                `
+            },
+            {
+                id: "day4",
+                bgColor: "bg-teal-50",
+                prompt: "An Asian family of four (parents and two little girls aged 6 and 3) exploring happily. Riding a whale watching boat in the ocean with a giant humpback whale jumping out of the water, near the beautiful Bondi Beach. Lots of clean negative space. Bright sunny day, Cute hand-drawn journal style, pastel colors. --ar 3:4",
+                title: "Day 4 🐳 乘風破浪與絕美海岸",
+                subtitle: "08/24 一",
+                date: "",
+                role: "",
+                content: `
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">「哇！巨大的鯨魚跟我們打招呼」</h3>
+                    <p class="text-slate-600 leading-relaxed mb-6">
+                        早上我們搭著大船出海，在太平洋上尋找座頭鯨的蹤影，當巨大鯨魚躍出水面的那一刻，超級震撼！下午我們來到美麗的邦代海灘玩沙，推著推車沿著平緩的海岸步道散步，聽著海浪的聲音。
+                    </p>
+                    <div class="mt-auto pt-6 border-t border-slate-100">
+                        <p class="text-sm font-semibold text-slate-500">📍 行程小記：</p>
+                        <ul class="text-sm text-slate-500 mt-1 list-disc pl-4 space-y-1">
+                            <li>上午：搭乘賞鯨船出海</li>
+                            <li>下午：Bondi Beach 玩沙 👉 海岸步道漫步至 Bronte 折返</li>
+                        </ul>
+                    </div>
+                `
+            },
+            {
+                id: "day5",
+                bgColor: "bg-fuchsia-50",
+                prompt: "An Asian family of four (parents and two little girls aged 6 and 3) exploring happily. Having fun at a retro amusement park with a giant smiling face entrance, surrounded by cute zoo animals. Lots of clean negative space. Bright sunny day, Cute hand-drawn journal style, pastel colors. --ar 3:4",
+                title: "Day 5 🎠 樂園歡笑與山林動物",
+                subtitle: "08/25 二",
+                date: "",
+                role: "",
+                content: `
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">「穿過大笑臉，來到動物好朋友的家」</h3>
+                    <p class="text-slate-600 leading-relaxed mb-6">
+                        吃過美味早餐，我們走進有著巨大笑臉入口的月亮公園，像走進復古的童話世界！下午我們搭船去塔龍加動物園，從山頂一路往下逛，不用爬坡超輕鬆，到處都是可愛的動物朋友！
+                    </p>
+                    <div class="mt-auto pt-6 border-t border-slate-100">
+                        <p class="text-sm font-semibold text-slate-500">📍 行程小記：</p>
+                        <ul class="text-sm text-slate-500 mt-1 list-disc pl-4 space-y-1">
+                            <li>上午：Cafe Portico 早餐 👉 LUNA PARK (月亮公園)</li>
+                            <li>下午：塔龍加動物園 (Taronga Zoo) - 先搭纜車至山頂入口往下推行</li>
+                            <li>晚上：享用預約好的美味晚餐</li>
+                        </ul>
+                    </div>
+                `
+            },
+            {
+                id: "day6",
+                bgColor: "bg-orange-50",
+                prompt: "An Asian family of four (parents and two little girls aged 6 and 3) exploring happily. Feeding friendly kangaroos and looking at sleeping koalas, with the magnificent Sydney Opera House in the background. Lots of clean negative space. Bright sunny day, Cute hand-drawn journal style, pastel colors. --ar 3:4",
+                title: "Day 6 🐨 萌獸零距離與歌劇院之夜",
+                subtitle: "08/26 三",
+                date: "",
+                role: "",
+                content: `
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">「毛茸茸見面會與雪梨最美的地標」</h3>
+                    <p class="text-slate-600 leading-relaxed mb-6">
+                        今天是期待已久的動物零距離！我們親手餵了蹦蹦跳的袋鼠，還看到在樹上睡得香甜的無尾熊。傍晚，我們來到港灣邊，和傳說中的雪梨歌劇院拍下最棒的全家福。
+                    </p>
+                    <div class="mt-auto pt-6 border-t border-slate-100">
+                        <p class="text-sm font-semibold text-slate-500">📍 行程小記：</p>
+                        <ul class="text-sm text-slate-500 mt-1 list-disc pl-4 space-y-1">
+                            <li>上午：Featherdale 野生動物園，近距離接觸無尾熊與袋鼠</li>
+                            <li>下午：特色 Coffee Factory 喝咖啡、吃午餐</li>
+                            <li>傍晚：雪梨歌劇院 👉 皇家植物園 👉 麥覺理夫人石椅</li>
+                        </ul>
+                    </div>
+                `
+            },
+            {
+                id: "day7",
+                bgColor: "bg-green-50",
+                prompt: "An Asian family of four (parents and two little girls aged 6 and 3) exploring happily. Riding a scenic cable car in the lush Blue Mountains, overlooking the magnificent Three Sisters rock formation. Lots of clean negative space. Bright sunny day, Cute hand-drawn journal style, pastel colors. --ar 3:4",
+                title: "Day 7 🌲 大自然深呼吸",
+                subtitle: "08/27 四",
+                date: "",
+                role: "",
+                content: `
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">「搭乘神奇纜車，拜訪石頭三姐妹」</h3>
+                    <p class="text-slate-600 leading-relaxed mb-6">
+                        我們離開市區，深入藍山國家公園！全家一起搭上高空纜車，從窗戶看出去是一大片壯麗的森林，還有傳說中的三姐妹岩。深深吸一口大自然的空氣，感覺全身都充滿了力量。
+                    </p>
+                    <div class="mt-auto pt-6 border-t border-slate-100">
+                        <p class="text-sm font-semibold text-slate-500">📍 行程小記 (二選一)：</p>
+                        <ul class="text-sm text-slate-500 mt-1 list-disc pl-4 space-y-1">
+                            <li>路線 A：藍山國家公園 (Blue Mountains) 搭乘纜車、欣賞三姐妹岩</li>
+                            <li>路線 B：Manly Beach 或 Watsons Bay 享受度假氛圍</li>
+                        </ul>
+                    </div>
+                `
+            },
+            {
+                id: "day8",
+                bgColor: "bg-indigo-50",
+                prompt: "An Asian family of four (parents and two little girls aged 6 and 3) exploring happily. Walking in front of the elegant Queen Victoria Building and the gorgeous St Mary's Cathedral in Sydney city. Lots of clean negative space. Bright sunny day, Cute hand-drawn journal style, pastel colors. --ar 3:4",
+                title: "Day 8 🏙️ 城市文化巡禮與告別",
+                subtitle: "08/28 五",
+                date: "",
+                role: "",
+                content: `
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">「穿梭在華麗的城堡裡，掰掰雪梨！」</h3>
+                    <p class="text-slate-600 leading-relaxed mb-6">
+                        旅程的尾聲，我們在雪梨市區散步。經過像皇宮一樣的維多利亞女王大廈，還看了美麗的聖瑪麗亞大教堂。傍晚，我們帶著滿滿的回憶前往機場，準備飛往下一個國度：新加坡！
+                    </p>
+                    <div class="mt-auto pt-6 border-t border-slate-100">
+                        <p class="text-sm font-semibold text-slate-500">📍 行程小記：</p>
+                        <ul class="text-sm text-slate-500 mt-1 list-disc pl-4 space-y-1">
+                            <li>白天：新南威爾斯畫廊 👉 QVB 維多利亞女王大廈 👉 海德公園 👉 聖瑪麗亞大教堂</li>
+                            <li>傍晚：前往雪梨機場，搭乘 TR15 班機飛往新加坡</li>
+                        </ul>
+                    </div>
+                `
+            },
+            {
+                id: "day9",
+                bgColor: "bg-rose-50",
+                prompt: "An Asian family of four (parents and two little girls aged 6 and 3) exploring happily. Having fun in front of the Universal Studios globe and the spectacular Jewel Changi indoor tropical waterfall. Lots of clean negative space. Bright sunny day, Cute hand-drawn journal style, pastel colors. --ar 3:4",
+                title: "Day 9 🎢 赤道獅城快閃",
+                subtitle: "08/29 六",
+                date: "",
+                role: "",
+                content: `
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">「從冬天一秒變夏天！環球影城大冒險」</h3>
+                    <p class="text-slate-600 leading-relaxed mb-6">
+                        清晨抵達新加坡，我們脫下厚外套，換上夏裝！白天在環球影城盡情尖叫歡笑，晚上回到機場，一邊吃著香甜的咖椰吐司，一邊看著星耀樟宜裡超巨大的室內瀑布，簡直像夢一樣。
+                    </p>
+                    <div class="mt-auto pt-6 border-t border-slate-100">
+                        <p class="text-sm font-semibold text-slate-500">📍 行程小記：</p>
+                        <ul class="text-sm text-slate-500 mt-1 list-disc pl-4 space-y-1">
+                            <li>清晨：抵達新加坡，雙寶推車補眠</li>
+                            <li>上午：福康寧公園 或 魚尾獅公園</li>
+                            <li>白天：暢玩 新加坡環球影城 (USS)</li>
+                            <li>傍晚：Hub and Spoke Cafe 休息沖澡</li>
+                            <li>晚上：亞坤加椰吐司 👉 星耀樟宜 (Jewel) 瀑布燈光秀</li>
+                        </ul>
+                    </div>
+                `
+            },
+            {
+                id: "day10",
+                bgColor: "bg-amber-50",
+                prompt: "An Asian family of four (parents and two little girls aged 6 and 3) exploring happily. Sitting around a wooden table full of travel souvenirs like Tim Tam chocolate biscuits, Papaw ointment, and Kaya jam. Lots of clean negative space. Bright sunny day, Cute hand-drawn journal style, pastel colors. --ar 3:4",
+                title: "Day 10 🏠 滿載回憶的歸途",
+                subtitle: "08/30 日",
+                date: "",
+                role: "",
+                content: `
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">「甜甜的戰利品，我們回家囉！」</h3>
+                    <p class="text-slate-600 leading-relaxed mb-6">
+                        行李箱裡裝滿了 Tim Tam 巧克力、紅色的木瓜霜，還有一路上的歡笑聲。10 天的雙城大冒險圓滿達成，寶貝們在推車上睡得香甜，我們平安飛抵台北，期待下一次的旅行！
+                    </p>
+                    <div class="mt-auto pt-6 border-t border-slate-100">
+                        <p class="text-sm font-semibold text-slate-500">📍 行程小記：</p>
+                        <ul class="text-sm text-slate-500 mt-1 list-disc pl-4 space-y-1">
+                            <li>上午：搭乘 TR866 班機，平安抵達台北 (TPE)</li>
+                        </ul>
+                    </div>
+                `
+            }
+        ];
+
+        let currentPage = 0;
+        let chartInstance = null; // 儲存圖表實例以備銷毀重建
+
+        // DOM 元素
+        const leftPage = document.getElementById('left-page');
+        const rightPage = document.getElementById('right-page');
+        const pageIndicator = document.getElementById('page-indicator');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const btnPrevSide = document.getElementById('btn-prev-side');
+        const btnNextSide = document.getElementById('btn-next-side');
+
+        function renderPage(index) {
+            const data = bookData[index];
+            
+            // 加入淡入動畫特效
+            leftPage.classList.remove('fade-in');
+            rightPage.classList.remove('fade-in');
+            void leftPage.offsetWidth; // 觸發重繪
+            leftPage.classList.add('fade-in');
+            rightPage.classList.add('fade-in');
+
+            // 渲染左頁 (圖片與 Prompt 佔位符)
+            // 將底色動態替換
+            leftPage.className = `w-full md:w-1/2 h-1/2 md:h-full relative book-spine-shadow flex flex-col items-center justify-center p-8 border-b md:border-b-0 md:border-r border-slate-200 transition-colors duration-500 fade-in ${data.bgColor}`;
+            
+            leftPage.innerHTML = `
+                <div class="w-full h-full border-2 border-dashed border-slate-400/50 rounded-xl flex flex-col items-center justify-center p-6 text-center relative bg-white/40 backdrop-blur-sm">
+                    <span class="text-4xl mb-4 opacity-70">🖼️</span>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">AI Image Placeholder</p>
+                    <p class="text-sm text-slate-600 italic max-w-sm">
+                        "${data.prompt}"
+                    </p>
+                    <div class="absolute bottom-4 left-0 w-full text-center">
+                        <span class="text-xs bg-white/80 px-3 py-1 rounded-full text-slate-400 shadow-sm">請在此處替換生成的真實圖片</span>
+                    </div>
+                </div>
+            `;
+
+            // 渲染右頁 (文字內容)
+            let rightHTML = '';
+            if (index === 0) { // 封面特殊排版
+                rightHTML = `
+                    <div class="flex-grow flex flex-col justify-center text-center px-4">
+                        <h2 class="text-3xl md:text-4xl font-extrabold text-slate-800 mb-4 leading-tight">${data.title}</h2>
+                        <h3 class="text-xl md:text-2xl text-slate-600 mb-8 font-medium">${data.subtitle}</h3>
+                        <div class="inline-block bg-white shadow-sm border border-slate-100 rounded-lg p-6 mb-8 text-left max-w-sm mx-auto w-full">
+                            <p class="flex items-center text-slate-600 mb-3"><span class="mr-3 text-lg">🗓️</span> ${data.date}</p>
+                            <p class="flex items-center text-slate-600"><span class="mr-3 text-lg">👨‍👩‍👧‍👧</span> ${data.role}</p>
+                        </div>
+                        <p class="text-slate-500 leading-relaxed">${data.content}</p>
+                    </div>
+                `;
+            } else { // 內頁常規排版
+                rightHTML = `
+                    <div class="flex-grow flex flex-col pt-4 md:pt-8">
+                        <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 mb-2">${data.title}</h2>
+                        ${data.subtitle ? `<h3 class="text-lg text-slate-500 font-medium mb-8">${data.subtitle}</h3>` : '<div class="mb-8"></div>'}
+                        <div class="text-slate-700 flex-grow">
+                            ${data.content}
+                        </div>
+                    </div>
+                `;
+            }
+            rightPage.innerHTML = rightHTML;
+
+            // 更新控制列與按鈕狀態
+            pageIndicator.innerText = `P.${index + 1} / ${bookData.length}`;
+            
+            const isFirst = index === 0;
+            const isLast = index === bookData.length - 1;
+            
+            btnPrev.disabled = isFirst;
+            btnPrevSide.disabled = isFirst;
+            btnNext.disabled = isLast;
+            btnNextSide.disabled = isLast;
+
+            // 如果是行程總表頁 (index === 1)，則初始化 Chart.js 圖表
+            if (index === 1) {
+                setTimeout(initSummaryChart, 100); // 延遲確保 DOM 已準備好
+            } else if (chartInstance) {
+                chartInstance.destroy();
+                chartInstance = null;
+            }
+        }
+
+        function initSummaryChart() {
+            const canvas = document.getElementById('summaryChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['城市漫步', '自然與動物', '主題樂園', '交通轉機'],
+                    datasets: [{
+                        data: [35, 35, 15, 15],
+                        backgroundColor: ['#bae6fd', '#bbf7d0', '#fbcfe8', '#fef08a'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { 
+                            position: 'right',
+                            labels: {
+                                font: { family: "'Nunito', 'Noto Sans TC', sans-serif" },
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.label + ': ' + context.parsed + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function nextPage() {
+            if (currentPage < bookData.length - 1) {
+                currentPage++;
+                renderPage(currentPage);
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                renderPage(currentPage);
+            }
+        }
+
+        // 初始化書籍
+        window.onload = () => {
+            renderPage(0);
+        };
+    </script>
+</body>
+</html>
