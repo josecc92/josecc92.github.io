@@ -1,3 +1,4 @@
+--- START OF FILE fix.html ---
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -131,6 +132,22 @@
     </div>
   </footer>
 
+  <!-- 圖片放大預覽 Modal 視窗 -->
+  <div id="image-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300">
+    <!-- 背景點擊區域 -->
+    <div id="modal-backdrop" class="absolute inset-0 cursor-zoom-out"></div>
+    
+    <div class="relative max-w-[90vw] max-h-[90vh] z-10 flex flex-col items-center">
+      <!-- 關閉按鈕 -->
+      <button id="modal-close-btn" class="absolute -top-12 right-0 bg-black/50 hover:bg-black/80 text-white rounded-full p-2 transition outline-none border border-gray-700/50 flex items-center justify-center">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+      
+      <!-- 圖片本體 -->
+      <img id="modal-image" src="" alt="預覽大圖" class="max-w-full max-h-[80vh] md:max-h-[85vh] rounded-lg object-contain shadow-2xl border border-gray-800">
+    </div>
+  </div>
+
   <!-- JavaScript 核心邏輯 -->
   <script>
     // 1. 基礎資料來源 (新增 images 欄位範例)
@@ -166,6 +183,12 @@
 
     const btnViewCard = document.getElementById('btn-view-card');
     const btnViewDetail = document.getElementById('btn-view-detail');
+
+    // Modal 節點
+    const imageModal = document.getElementById('image-modal');
+    const modalBackdrop = document.getElementById('modal-backdrop');
+    const modalImage = document.getElementById('modal-image');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
 
 	const headerMapping = {
 	  "ID": "id",
@@ -275,7 +298,76 @@
       btnViewCard.addEventListener('click', () => setViewMode('CARD'));
       btnViewDetail.addEventListener('click', () => setViewMode('DETAIL'));
 
+      // 綁定大圖 Modal 的點擊與滑鼠懸停事件 (採用事件委派以處理動態生成的圖片)
+      let hoverTimeout = null;
+
+      // 監聽滑鼠移入圖片
+      document.addEventListener('mouseover', (e) => {
+        if (e.target.classList.contains('carousel-img')) {
+          // 如果 Modal 已經在顯示狀態，則不重複觸發
+          if (!imageModal.classList.contains('hidden')) return;
+          const imgSrc = e.target.src;
+
+          if (hoverTimeout) clearTimeout(hoverTimeout);
+          // 滑鼠移入 800 毫秒後開啟大圖
+          hoverTimeout = setTimeout(() => {
+            openModal(imgSrc);
+          }, 800);
+        }
+      });
+
+      // 監聽滑鼠移出圖片
+      document.addEventListener('mouseout', (e) => {
+        if (e.target.classList.contains('carousel-img')) {
+          if (hoverTimeout) {
+            clearTimeout(hoverTimeout);
+            hoverTimeout = null;
+          }
+        }
+      });
+
+      // 監聽直接點擊圖片
+      document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('carousel-img')) {
+          if (hoverTimeout) {
+            clearTimeout(hoverTimeout);
+            hoverTimeout = null;
+          }
+          openModal(e.target.src);
+        }
+      });
+
+      // 關閉 Modal 的點擊事件
+      modalCloseBtn.addEventListener('click', closeModal);
+      modalBackdrop.addEventListener('click', closeModal);
+
       render();
+    }
+
+    // 開啟大圖 Modal 函數
+    function openModal(src) {
+      if (!src) return;
+      modalImage.src = src;
+      imageModal.classList.remove('hidden');
+      // 強制瀏覽器重繪以啟動 Tailwind 的 transition 漸顯動畫
+      imageModal.offsetHeight;
+      imageModal.classList.remove('opacity-0');
+      imageModal.classList.add('opacity-100');
+    }
+
+    // 關閉大圖 Modal 函數
+    function closeModal() {
+      imageModal.classList.remove('opacity-100');
+      imageModal.classList.add('opacity-0');
+      setTimeout(() => {
+        imageModal.classList.add('hidden');
+        modalImage.src = '';
+      }, 300);
+
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+        hoverTimeout = null;
+      }
     }
 
     // 4. 動態與連動選單產生器
@@ -478,7 +570,7 @@
           const hasMultiple = imageList.length > 1;
           imageHeaderHTML = `
             <div id="carousel-${item.id}" class="relative aspect-[16/10] w-full bg-gray-100 overflow-hidden" data-images="${item.images}" data-current-index="0">
-              <img src="${imageList[0]}" alt="${item.name}" class="carousel-img w-full h-full object-cover transition-all duration-300">
+              <img src="${imageList[0]}" alt="${item.name}" class="carousel-img w-full h-full object-cover transition-all duration-300 cursor-zoom-in">
               
               ${hasMultiple ? `
                 <!-- 左右點擊箭頭 -->
@@ -667,3 +759,4 @@
   </script>
 </body>
 </html>
+--- END OF FILE fix.html ---
