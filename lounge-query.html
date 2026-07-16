@@ -153,7 +153,7 @@
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQXMOuk7L3f11U9QXaTRJsQPedSkCKw_VMRDIk2Y4EIPH5K-9dodvf74xWpEDH1lzeM1c7vgb7691Wa/pub?gid=0&single=true&output=csv";
 	let loungeData = [];
 
-    const flags = { "AU": "🇦🇺", "JP": "🇯🇵" };
+    const flags = { "AU": "🇦🇺", "JP": "🇯🇵", "SG": "🇸🇬", "TW": "🇹🇼" };
 
     // 2. 篩選器的目前狀態 (State)
     const filterState = {
@@ -240,6 +240,9 @@
 			// 執行後續的連動與渲染
 			buildCascadingFilters();
 			render();
+
+      // 預設選擇台灣
+      filterCountry.value = 'TW';
 		  }
 		});
 
