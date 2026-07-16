@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>機場貴賓室查詢</title>
+  <!-- 引入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入 Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col font-sans">
+
+  <!-- 頁首 -->
+  <header class="bg-blue-600 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <i data-lucide="plane-takeoff" class="w-7 h-7"></i>
+            機場貴賓室與合作餐廳查詢系統
+          </h1>
+          <p class="text-blue-100 text-sm mt-1">連動篩選與實時營業狀態工具</p>
+        </div>
+        <!-- 顯示目前時間 -->
+        <div class="bg-blue-700 px-4 py-2 rounded-lg text-sm flex items-center gap-2 self-start md:self-auto">
+          <i data-lucide="clock" class="w-4 h-4 text-blue-300"></i>
+          <span>目前裝置時間：<strong id="current-time-display">--:--</strong></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 lg:px-8">
+    
+    <!-- 篩選控制面板 -->
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+      <div class="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 text-gray-700 font-semibold">
+        <i data-lucide="sliders-horizontal" class="w-5 h-5 text-blue-500"></i>
+        <h2>篩選控制項</h2>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <!-- 國家篩選 -->
+        <div>
+          <label for="filter-country" class="block text-xs font-medium text-gray-500 mb-1">國家 / 地區</label>
+          <select id="filter-country" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <option value="all">全部國家</option>
+          </select>
+        </div>
+
+        <!-- 機場篩選 -->
+        <div>
+          <label for="filter-airport" class="block text-xs font-medium text-gray-500 mb-1">機場名稱</label>
+          <select id="filter-airport" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <option value="all">全部機場</option>
+          </select>
+        </div>
+
+        <!-- 航廈篩選 -->
+        <div>
+          <label for="filter-terminal" class="block text-xs font-medium text-gray-500 mb-1">航廈</label>
+          <select id="filter-terminal" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <option value="all">全部航廈</option>
+          </select>
+        </div>
+
+        <!-- 區域篩選 -->
+        <div>
+          <label for="filter-area" class="block text-xs font-medium text-gray-500 mb-1">區域</label>
+          <select id="filter-area" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <option value="all">全部區域</option>
+          </select>
+        </div>
+
+        <!-- 類型篩選 -->
+        <div>
+          <label for="filter-type" class="block text-xs font-medium text-gray-500 mb-1">設施類型</label>
+          <select id="filter-type" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <option value="all">全部類型</option>
+          </select>
+        </div>
+
+        <!-- 適用卡別篩選 -->
+        <div>
+          <label for="filter-card" class="block text-xs font-medium text-gray-500 mb-1">適用卡別</label>
+          <select id="filter-card" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <option value="all">不限卡別</option>
+            <option value="PP">PP 新貴通</option>
+            <option value="DP">DP 龍騰</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 進階開關與檢視切換 -->
+      <div class="mt-4 pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <label class="inline-flex items-center cursor-pointer select-none">
+          <input type="checkbox" id="filter-open-now" class="sr-only peer">
+          <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          <span class="ms-3 text-sm font-medium text-gray-700 flex items-center gap-1">
+            僅顯示目前營業中
+            <span class="text-xs text-gray-400 font-normal">(對照本地裝置時間)</span>
+          </span>
+        </label>
+
+        <div class="flex items-center gap-4">
+          <span class="text-xs text-gray-500" id="result-count">共顯示 -- 筆資料</span>
+          <div class="inline-flex rounded-md shadow-sm" role="group">
+            <button type="button" id="btn-view-card" class="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-s-lg hover:bg-blue-100 focus:z-10 flex items-center gap-1 transition">
+              <i data-lucide="layout-grid" class="w-4 h-4"></i> 卡片 (CARD)
+            </button>
+            <button type="button" id="btn-view-detail" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-r border-gray-200 rounded-e-lg hover:bg-gray-50 hover:text-blue-700 focus:z-10 flex items-center gap-1 transition">
+              <i data-lucide="table" class="w-4 h-4"></i> 詳細 (DETAIL)
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 資料呈現區 -->
+    <section id="data-container">
+      <!-- 內容將由 JavaScript 動態渲染 -->
+    </section>
+
+  </main>
+
+  <footer class="bg-gray-800 text-gray-400 py-6 mt-12 border-t border-gray-700">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs">
+      <p>© 貴賓室與合作餐廳查詢系統。圖片欄位支援多張網址，請以英文逗號隔開。</p>
+    </div>
+  </footer>
+
+  <!-- JavaScript 核心邏輯 -->
+  <script>
+    // 1. 基礎資料來源 (新增 images 欄位範例)
+    const loungeData = [
+	  {
+		"id": "B0B4F97E",
+		"country": "AU",
+		"airportName": "雪梨機場",
+		"airportCode": "SYD",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 25",
+		"name": "Plaza Premium Lounge",
+		"type": "貴賓室",
+		"cards": "PP 新貴通, DP 龍騰",
+		"meals": "",
+		"startTime": "06:00",
+		"endTime": "22:00",
+		"note": "2歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/9CQ1VYdWUpEcDu1CA",
+		"Images": ""
+	  },
+	  {
+		"id": "B529AA8A",
+		"country": "AU",
+		"airportName": "雪梨機場",
+		"airportCode": "SYD",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 50",
+		"name": "The House",
+		"type": "貴賓室",
+		"cards": "PP 新貴通, DP 龍騰",
+		"meals": "",
+		"startTime": "05:00",
+		"endTime": "22:00",
+		"note": "2歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/5BGaW1RAVDZkzkHo9",
+		"Images": ""
+	  },
+	  {
+		"id": "E6EAF891",
+		"country": "AU",
+		"airportName": "雪梨機場",
+		"airportCode": "SYD",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "1F",
+		"name": "Plaza Premium Lounge",
+		"type": "貴賓室",
+		"cards": "PP 新貴通, DP 龍騰",
+		"meals": "",
+		"startTime": "06:00",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/GfPhkKVy7oF8QWLz9",
+		"Images": ""
+	  },
+	  {
+		"id": "7A09D1BE",
+		"country": "AU",
+		"airportName": "雪梨機場",
+		"airportCode": "SYD",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 56",
+		"name": "Peroni Bar",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "啤酒,調酒,生火腿拼盤,義大利麵,三明治等",
+		"startTime": "04:00",
+		"endTime": "21:00",
+		"note": "折抵36AUD",
+		"googleMap": "https://maps.app.goo.gl/y1qkjsSkAfgzvDmr8",
+		"Images": ""
+	  },
+	  {
+		"id": "D87BB39E",
+		"country": "AU",
+		"airportName": "雪梨機場",
+		"airportCode": "SYD",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate G1",
+		"name": "REX Lounge",
+		"type": "貴賓室",
+		"cards": "PP 新貴通",
+		"meals": "",
+		"startTime": "05:30",
+		"endTime": "19:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/PzCgX5fT9NtDggX67",
+		"Images": ""
+	  },
+	  {
+		"id": "F948E7AF",
+		"country": "AU",
+		"airportName": "雪梨機場",
+		"airportCode": "SYD",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "2F Food Court",
+		"name": "Bistro Bar 2020",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "漢堡,牛排,義大利麵,炸薯條,早餐選項",
+		"startTime": "06:00",
+		"endTime": "18:00",
+		"note": "折抵36AUD",
+		"googleMap": "https://maps.app.goo.gl/j3K9m5GZm9oBguG28",
+		"Images": ""
+	  },
+	  {
+		"id": "DCC055B0",
+		"country": "AU",
+		"airportName": "雪梨機場",
+		"airportCode": "SYD",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 3",
+		"name": "Fat Yak",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "手工披薩,串燒",
+		"startTime": "08:00",
+		"endTime": "20:00",
+		"note": "折抵36AUD",
+		"googleMap": "https://maps.app.goo.gl/VKJbXAR8iRZ52T1Y8",
+		"Images": ""
+	  },
+	  {
+		"id": "7FC106D6",
+		"country": "AU",
+		"airportName": "雪梨機場",
+		"airportCode": "SYD",
+		"terminal": "T3",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 2",
+		"name": "Luke's Bistro & Bar",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "Lobster Rolls, Tuna Sashimi Taco,牛排,酪梨酸種麵包",
+		"startTime": "05:00",
+		"endTime": "20:00",
+		"note": "折抵36AUD",
+		"googleMap": "https://maps.app.goo.gl/nH24Y8bUnXegdcXd8",
+		"Images": ""
+	  },
+	  {
+		"id": "C2B32468",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 16",
+		"name": "Power Lounge North",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "06:00",
+		"endTime": "20:30",
+		"note": "3歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/Zpi4WLfvhVfogGkG9",
+		"Images": ""
+	  },
+	  {
+		"id": "4C1B980D",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 92",
+		"name": "Power Lounge South",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "06:00",
+		"endTime": "21:00",
+		"note": "3歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/BAfTW6nQrMqNKRUw6",
+		"Images": ""
+	  },
+	  {
+		"id": "38E2DF62",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "日本郵局旁",
+		"name": "Power Lounge Central",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "06:00",
+		"endTime": "20:00",
+		"note": "3歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/jzaiGMofxmFeZJfe7",
+		"Images": ""
+	  },
+	  {
+		"id": "56E5D0CB",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "3F",
+		"name": "一休茶屋",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "炸豬排套餐, 飲料",
+		"startTime": "11:00",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/PeDAHGN1323UvDfZA",
+		"Images": ""
+	  },
+	  {
+		"id": "BA3F6FFE",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "2F時鐘旁",
+		"name": "一品屋",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "套餐(白粥膳,茶漬膳,鮭魚膳)",
+		"startTime": "05:30",
+		"endTime": "18:30",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/JNegRXkeYMjpPXK2A",
+		"Images": ""
+	  },
+	  {
+		"id": "CCDF310B",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "3F",
+		"name": "中華料理 彩鳳",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "中華料理主餐, 飲料",
+		"startTime": "11:00",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/CeNaRiiqESC3x6Aj7",
+		"Images": ""
+	  },
+	  {
+		"id": "50BD9C10",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "3F",
+		"name": "京ぜん",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "九格套餐",
+		"startTime": "11:00",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/gDQE1oW8A51KXy4j9",
+		"Images": ""
+	  },
+	  {
+		"id": "DC98D804",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "4F",
+		"name": "黃金色の豚",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "炸蝦豬排套餐",
+		"startTime": "11:00",
+		"endTime": "20:30",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/u5zh7oEQrqu7mwhY7",
+		"Images": ""
+	  },
+	  {
+		"id": "A476AF6B",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "5F",
+		"name": "LDH kitchen",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "套餐(咖哩, 義大利麵), 飲料",
+		"startTime": "10:00",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/N7H2UCypE6zVbTBPA",
+		"Images": ""
+	  },
+	  {
+		"id": "7295C015",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "3F",
+		"name": "リストランテ三本珈琲店\nRistorante",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "BLT三明治, 咖啡",
+		"startTime": "06:30",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/k3JmnagoBjmUyabZ8",
+		"Images": ""
+	  },
+	  {
+		"id": "5EC45154",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "4F",
+		"name": "ロイヤルホスト\nRoyal Host",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "漢堡排炸蝦套餐,湯,飲料,麵包",
+		"startTime": "09:00",
+		"endTime": "20:30",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/FGN7NhAJfCi9h5246",
+		"Images": ""
+	  },
+	  {
+		"id": "7989398A",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 65",
+		"name": "Airport Lounge(South)",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "06:00",
+		"endTime": "20:00",
+		"note": "3歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/HUeya9Mu6XsyVxEAA",
+		"Images": ""
+	  },
+	  {
+		"id": "E427F94A",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 52 3F",
+		"name": "Power Lounge North",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "06:00",
+		"endTime": "21:30",
+		"note": "3歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/T1ecz4reoUhT5uJH8",
+		"Images": ""
+	  },
+	  {
+		"id": 60523714,
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "Power Lounge Premium",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "06:30",
+		"endTime": "00:30",
+		"note": "3歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/Bzz3AwccTS2hdUiK9",
+		"Images": ""
+	  },
+	  {
+		"id": "80D0B659",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T2",
+		"area": "管制區外 (Landside)",
+		"location": "3F",
+		"name": "Power Lounge Central",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "06:00",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/HzDN97F4ZQwXGA9y7",
+		"Images": ""
+	  },
+	  {
+		"id": "0A273D2E",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 72",
+		"name": "一品屋",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "套餐(白粥膳,茶漬膳,鮭魚膳)",
+		"startTime": "06:30",
+		"endTime": "22:30",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/Be1ZYctAYL8Svtya6",
+		"Images": ""
+	  },
+	  {
+		"id": "01893DF4",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T2",
+		"area": "管制區外 (Landside)",
+		"location": "4F",
+		"name": "エアポートグリル＆バール\nAirport Grill and Bar",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "主餐(牛肉漢堡排), 麵包,湯, 沙拉,飲料, 甜點",
+		"startTime": "11:00",
+		"endTime": "20:30",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/8GSsicbjBe9ohRNx7",
+		"Images": ""
+	  },
+	  {
+		"id": "00500CE4",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T3",
+		"area": "出境管制區 (Airside)",
+		"location": "4F",
+		"name": "Sky Lounge South",
+		"type": "貴賓室",
+		"cards": "PP 新貴通",
+		"meals": "",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "JCB可進",
+		"googleMap": "https://maps.app.goo.gl/btmmE4nKjxMQySZm9",
+		"Images": ""
+	  },
+	  {
+		"id": "3103769F",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T3",
+		"area": "出境管制區 (Airside)",
+		"location": "4F",
+		"name": "TIAT Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/BBN4hfhWpbRXbtPMA",
+		"Images": ""
+	  },
+	  {
+		"id": "2D075B62",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T3",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 147",
+		"name": "Caffe146",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "BLT三明治, 咖啡",
+		"startTime": "07:30",
+		"endTime": "02:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/ccxFLiCgXoPDUH2Y9",
+		"Images": ""
+	  },
+	  {
+		"id": "1F15F0BB",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T3",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 113",
+		"name": "Curacion Cafe",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "BLT三明治, 咖啡",
+		"startTime": "05:30",
+		"endTime": "02:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/5s3WMtWyi5ea7CBF9",
+		"Images": ""
+	  },
+	  {
+		"id": "95F02A66",
+		"country": "JP",
+		"airportName": "羽田機場花園",
+		"airportCode": "HND",
+		"terminal": "T3",
+		"area": "管制區外 (Landside)",
+		"location": "1F",
+		"name": "オールデイダイニング グランドエール／ヴィラフォン\n全日餐廳 GRANDE AILE",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "自助餐吃到飽(4000JPY)",
+		"startTime": "11:00",
+		"endTime": "15:00",
+		"note": "PP卡要對機票\n7歲以下免費",
+		"googleMap": "https://maps.app.goo.gl/uf3tHmG97C7aWvhM7",
+		"Images": ""
+	  },
+	  {
+		"id": "77D3041E",
+		"country": "JP",
+		"airportName": "羽田空港",
+		"airportCode": "HND",
+		"terminal": "T3",
+		"area": "管制區外 (Landside)",
+		"location": "3F O櫃旁",
+		"name": "レストラン＆バー テイルウィンド\nTailwind",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "天婦羅生魚片套餐",
+		"startTime": "06:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/NXHmNsezHKg1btfm7",
+		"Images": ""
+	  },
+	  {
+		"id": "4F2F9555",
+		"country": "JP",
+		"airportName": "羽田機場花園",
+		"airportCode": "HND",
+		"terminal": "T3",
+		"area": "管制區外 (Landside)",
+		"location": "2F",
+		"name": "Body Care LUCK",
+		"type": "體驗",
+		"cards": "PP 新貴通",
+		"meals": "",
+		"startTime": "10:00",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/V5o6zJR1diLZ8BEb7",
+		"Images": ""
+	  },
+	  {
+		"id": "7AA88320",
+		"country": "JP",
+		"airportName": "羽田機場",
+		"airportCode": "HND",
+		"terminal": "T3",
+		"area": "管制區外 (Landside)",
+		"location": "3F",
+		"name": "Foot Bath Cafe & Body Care LUCK",
+		"type": "體驗",
+		"cards": "PP 新貴通",
+		"meals": "",
+		"startTime": "10:00",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/oHWC9Ajv7NJZneNNA",
+		"Images": ""
+	  },
+	  {
+		"id": "1FF529C4",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 26",
+		"name": "希和-NOA-",
+		"type": "貴賓室",
+		"cards": "PP 新貴通, DP 龍騰",
+		"meals": "",
+		"startTime": "07:30",
+		"endTime": "21:00",
+		"note": "6歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/gdaHhmgabm5LhJYq8",
+		"Images": ""
+	  },
+	  {
+		"id": "81323A10",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "5F",
+		"name": "EXECUTIVE Lounge 1",
+		"type": "貴賓室",
+		"cards": "PP 新貴通, DP 龍騰",
+		"meals": "",
+		"startTime": "07:00",
+		"endTime": "21:00",
+		"note": "限入境離境過境,3歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/SXk6wqkpfadC9zEq9",
+		"Images": ""
+	  },
+	  {
+		"id": "4B491A2D",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 26",
+		"name": "三本亭",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "咖哩豬排丼",
+		"startTime": "07:30",
+		"endTime": "20:30",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/GNwrTAQrX7rxdjc99",
+		"Images": ""
+	  },
+	  {
+		"id": "1958AEB3",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 26",
+		"name": "Tatsu",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "主食, 天婦羅, 飲料",
+		"startTime": "12:00",
+		"endTime": "18:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/oBzikzszkCvZ6rSL9",
+		"Images": ""
+	  },
+	  {
+		"id": "7598E4F7",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "4F",
+		"name": "川豊",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "鰻魚便當",
+		"startTime": "08:00",
+		"endTime": "20:30",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/8i38NQagMJ7c6bW59",
+		"Images": ""
+	  },
+	  {
+		"id": "D1F8D030",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "4F",
+		"name": "肉料理 やきすき",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "壽喜鐵板燒, 布丁",
+		"startTime": "12:00",
+		"endTime": "18:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/NDrS2TFW6BJiFN8PA",
+		"Images": ""
+	  },
+	  {
+		"id": "55F03DF0",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "4F",
+		"name": "虚空-KoCoo-",
+		"type": "貴賓室",
+		"cards": "PP 新貴通, DP 龍騰",
+		"meals": "",
+		"startTime": "07:30",
+		"endTime": "21:00",
+		"note": "6歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/sASvY7oHhLNUJMEA9",
+		"Images": ""
+	  },
+	  {
+		"id": "43E890B4",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 82",
+		"name": "ASPIRE Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰",
+		"meals": "",
+		"startTime": "07:30",
+		"endTime": "20:00",
+		"note": "2歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/WXHBzUN34tbsn77J8",
+		"Images": ""
+	  },
+	  {
+		"id": "8255534D",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T2",
+		"area": "管制區外 (Landside)",
+		"location": "4F",
+		"name": "EXECUTIVE Lounge 2",
+		"type": "貴賓室",
+		"cards": "PP 新貴通, DP 龍騰",
+		"meals": "",
+		"startTime": "07:00",
+		"endTime": "21:00",
+		"note": "限入境離境過境,3歲以下免費進入",
+		"googleMap": "https://maps.app.goo.gl/8rCZQtaCWM1gcG3W7",
+		"Images": ""
+	  },
+	  {
+		"id": "15F79A94",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 61",
+		"name": "三本亭",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "咖哩豬排丼",
+		"startTime": "07:30",
+		"endTime": "22:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/waNXWUbf4f2rhPoe7",
+		"Images": ""
+	  },
+	  {
+		"id": "3E9CBF5D",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "2F",
+		"name": "鉄板焼 道頓堀 くり田",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "鐵板套餐, 飲料",
+		"startTime": "07:30",
+		"endTime": "22:30",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/SqBkyVCHy37JTjDP8",
+		"Images": ""
+	  },
+	  {
+		"id": "A8CA930E",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 61",
+		"name": "FRUIT PARLOR Mi’z",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "草莓冰沙",
+		"startTime": "07:30",
+		"endTime": "22:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/r6Px2vDKAjEKawQA9",
+		"Images": ""
+	  },
+	  {
+		"id": "657AB9F6",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 92",
+		"name": "MISO KITCHEN",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "拉麵, 飲料",
+		"startTime": "08:00",
+		"endTime": "21:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/WNwjj6FGuWf9fyvc7",
+		"Images": ""
+	  },
+	  {
+		"id": "6262A00F",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T2",
+		"area": "管制區外 (Landside)",
+		"location": "B1",
+		"name": "9h nine hours",
+		"type": "體驗",
+		"cards": "PP 新貴通",
+		"meals": "",
+		"startTime": "09:00",
+		"endTime": "20:00",
+		"note": "6 至 11 歲的兒童可進入",
+		"googleMap": "https://maps.app.goo.gl/S3mJuoi5RAraNf1N6",
+		"Images": ""
+	  },
+	  {
+		"id": "C1DC6004",
+		"country": "JP",
+		"airportName": "成田国際空港",
+		"airportCode": "NRT",
+		"terminal": "T3",
+		"area": "管制區外 (Landside)",
+		"location": "2F",
+		"name": "ぼてぢゅう\n波天久屋台",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "摩登燒,章魚燒, 炸機,甜點,飲料",
+		"startTime": "05:00",
+		"endTime": "22:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/SwbmhrGX4a9npbFs5",
+		"Images": ""
+	  },
+	  {
+		"id": "C6D9C9BA",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "Marhaba Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "06:00",
+		"endTime": "01:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/HjcSd6TitkvcS5Z88",
+		"Images": ""
+	  },
+	  {
+		"id": "0CA1549E",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "3F(C1手扶梯上樓)",
+		"name": "Plaza Premium Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/8U8xfPGoNMgHdyMd7",
+		"Images": ""
+	  },
+	  {
+		"id": "4BA3459A",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "SATS Premier Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/H4iHdws7BExEDAif6",
+		"Images": ""
+	  },
+	  {
+		"id": "9FA285D8",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "星耀樟宜航廈1F",
+		"name": "Changi Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "06:00",
+		"endTime": "22:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/UchGSAoRdygbEXVJ8",
+		"Images": ""
+	  },
+	  {
+		"id": "E769C423",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "Crystal Jade La Mian Xiao Long Bao",
+		"type": "餐廳",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "前菜, 主菜(港式), 甜點, 飲料",
+		"startTime": "06:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/GPnqL4EtJVkiUE7J6",
+		"Images": ""
+	  },
+	  {
+		"id": "3E050A33",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "2F",
+		"name": "Harry's",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "特定菜單(多國菜系), 酒精飲料",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/r46a6nejUSSeLqzt7",
+		"Images": ""
+	  },
+	  {
+		"id": "01C07565",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "2F",
+		"name": "Heineken World Bar\nMango Tree Kitchen",
+		"type": "餐廳",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "主餐(拼盤、漢堡), 飲料",
+		"startTime": "06:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/mECRYhWmCCcJoVK89",
+		"Images": ""
+	  },
+	  {
+		"id": "15436BDD",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "World of Tiger Beer",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "主餐(拼盤、漢堡), 沙拉, 飲料",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/uxwz6Mp2p2zEBXHX6",
+		"Images": ""
+	  },
+	  {
+		"id": "8F18BCC5",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "3F",
+		"name": "Saboten",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "主餐套餐(腰內, 里肌), 茶類飲料",
+		"startTime": "10:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/SiBcGQh2EQK5jNZ68",
+		"Images": ""
+	  },
+	  {
+		"id": "83F2519C",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T1",
+		"area": "管制區外 (Landside)",
+		"location": "3F",
+		"name": "Terrace Chinese Kitchen",
+		"type": "餐廳",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "早餐套餐 + 飲料, 或 港式套餐(Sides + 飲料)",
+		"startTime": "08:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/4kN4PtPYsPv1emyo8",
+		"Images": ""
+	  },
+	  {
+		"id": 7564300000000000000,
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "Ambassador Transit Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/5kW9SrXfLr6T6dNL7",
+		"Images": ""
+	  },
+	  {
+		"id": "7C356D83",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "SATS Premier Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/URnLmDeXJn114kUPA",
+		"Images": ""
+	  },
+	  {
+		"id": "52F29DF0",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "2F",
+		"name": "Asian Street Kitchen",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "主菜(多國菜系), 甜點, 飲料",
+		"startTime": "06:00",
+		"endTime": "01:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/sRsW8JTuh1KM1gLk6",
+		"Images": ""
+	  },
+	  {
+		"id": "7DC6465B",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate E",
+		"name": "Heineken World Bar",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "烤雞, 義大利麵, 飲料",
+		"startTime": "06:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/p2KjJrguN9eZ9UoH9",
+		"Images": ""
+	  },
+	  {
+		"id": "DA890D3D",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "Kaveri Indian Vegetarian",
+		"type": "餐廳",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "主餐(瑪薩拉薄餅,煎餅), 炸豆餅, 蒸米糕, 甜粥) 或素食套餐",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/1Pz6EKstwjmxS6f57",
+		"Images": ""
+	  },
+	  {
+		"id": "7E8B09AF",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "2F",
+		"name": "The Satay Club by Harry's",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "主菜(多國菜系), 酒精飲料",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/25QiBMReQCiARFqA9",
+		"Images": ""
+	  },
+	  {
+		"id": "E0FEF245",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T2",
+		"area": "管制區外 (Landside)",
+		"location": "3F",
+		"name": "Chutney Mary Indian Fast Food",
+		"type": "餐廳",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "主餐(印度系菜色), 甜品, 飲料",
+		"startTime": "05:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/fjarRQqyyo1e8uGG8",
+		"Images": ""
+	  },
+	  {
+		"id": "CDEADF9E",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "Natureland",
+		"type": "體驗",
+		"cards": "PP 新貴通",
+		"meals": "20分鐘頭背按摩",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/hKepF8uvpVsPUqSi8",
+		"Images": ""
+	  },
+	  {
+		"id": "618C4249",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "TranSpa",
+		"type": "體驗",
+		"cards": "PP 新貴通",
+		"meals": "護理(20分鐘頭肩足按摩, 洗髮剪髮吹髮), 淋浴",
+		"startTime": "11:00",
+		"endTime": "21:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/LDpodH6kU8p8SPoT8",
+		"Images": ""
+	  },
+	  {
+		"id": "8FF06F07",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T2",
+		"area": "管制區外 (Landside)",
+		"location": "1F 外部",
+		"name": "Hub & Spoke",
+		"type": "體驗, 餐廳",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "主餐, 炸薯條, 飲品, 淋浴代幣, 毛巾",
+		"startTime": "07:30",
+		"endTime": "20:00",
+		"note": "根據套餐不同有機會選到兩份淋浴",
+		"googleMap": "https://maps.app.goo.gl/Mo2whLkHChzaH9um7",
+		"Images": ""
+	  },
+	  {
+		"id": "0BAB5F61",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T3",
+		"area": "出境管制區 (Airside)",
+		"location": "3F(B1-6手扶梯上樓)",
+		"name": "Ambassador Transit Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/LutbEZf7amfLp9nT7",
+		"Images": ""
+	  },
+	  {
+		"id": "61228BEB",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T3",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "Marhaba Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "06:00",
+		"endTime": "01:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/fdrg9JBcdjRBEXQF7",
+		"Images": ""
+	  },
+	  {
+		"id": "593990A8",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T3",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "SATS Premier Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/irdFetR7tWQcRqCH9",
+		"Images": ""
+	  },
+	  {
+		"id": "C6063E6A",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T3",
+		"area": "出境管制區 (Airside)",
+		"location": "2F",
+		"name": "Harry's",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "特定菜單(多國菜系), 酒精飲料",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/wEa3Wab1ccaWoYQm6",
+		"Images": ""
+	  },
+	  {
+		"id": "029E6881",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T3",
+		"area": "出境管制區 (Airside)",
+		"location": "3F",
+		"name": "Kaveri Express Indian Vegetarian",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "主餐(瑪薩拉薄餅,煎餅), 炸豆餅, 蒸米糕, 甜粥) 或素食套餐",
+		"startTime": "06:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "",
+		"Images": ""
+	  },
+	  {
+		"id": "68BC9B14",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T3",
+		"area": "出境管制區 (Airside)",
+		"location": "2F",
+		"name": "The Kitchen by Wolfgang Puck",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "主餐(早午餐, 漢堡, 義大利麵, 沙拉, 披薩, 亞洲料理), 飲料",
+		"startTime": "06:00",
+		"endTime": "01:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/HP9tEXZcHkx3hSSm7",
+		"Images": ""
+	  },
+	  {
+		"id": "CA73AAB8",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T3",
+		"area": "管制區外 (Landside)",
+		"location": "2F",
+		"name": "NamNam",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "Pho, Side, 飲料",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/3o4mdwiZgbnMcy2eA",
+		"Images": ""
+	  },
+	  {
+		"id": "B7621D5A",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T4",
+		"area": "出境管制區 (Airside)",
+		"location": "2M",
+		"name": "Blossom - Sats & Plaza Pemium Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/yNNqjLJV5muJKCr37",
+		"Images": ""
+	  },
+	  {
+		"id": "BFAC8799",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T4",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 8",
+		"name": "Crystal Jade Go",
+		"type": "餐廳",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "前菜, 主菜(港式), 甜點, 飲料",
+		"startTime": "06:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/qfzad3AdVEpTjtR68",
+		"Images": ""
+	  },
+	  {
+		"id": "0DFC793C",
+		"country": "SG",
+		"airportName": "新加坡樟宜機場",
+		"airportCode": "SIN",
+		"terminal": "T4",
+		"area": "出境管制區 (Airside)",
+		"location": "2F",
+		"name": "Tiger Den",
+		"type": "餐廳",
+		"cards": "PP 新貴通",
+		"meals": "主餐(炸魚薯條, 雞肉堡, 鱈魚堡), 飲料",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/fQJXMNvkPsMEVkZK9",
+		"Images": ""
+	  },
+	  {
+		"id": "05D442B6",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Zone D",
+		"name": "Plaza Premium Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/jdjD7XvCCrSyBPUQ7",
+		"Images": ""
+	  },
+	  {
+		"id": "421F18B8",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Zone C",
+		"name": "Plaza Premium Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "05:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/oHy6cEUG5V62E4mA8",
+		"Images": ""
+	  },
+	  {
+		"id": "0BE992E5",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate B5",
+		"name": "Bistro :D 畢卓樂地",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "主餐(任選, 牛小排, 伊比利豬)",
+		"startTime": "06:00",
+		"endTime": "14:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/NJeCrEwzAWyCtsGZA",
+		"Images": ""
+	  },
+	  {
+		"id": "A43DB831",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate A6",
+		"name": "Bistro :D 畢卓樂地",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "主餐(任選, 牛小排, 伊比利豬)",
+		"startTime": "05:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/4kAZzNzCQBCx8zp18",
+		"Images": ""
+	  },
+	  {
+		"id": "8CDD5837",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "A5 Gate",
+		"name": "homee KITCHEN",
+		"type": "餐廳",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "主食(牛肉麵,三杯雞,梅干扣肉,滷排骨), 飲料, 點心, 冰淇淋",
+		"startTime": "06:00",
+		"endTime": "23:00",
+		"note": "旁邊有兒童遊戲室",
+		"googleMap": "https://maps.app.goo.gl/75BaMo2R6Ur6Gr7o7",
+		"Images": ""
+	  },
+	  {
+		"id": "8E27D696",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "B4 Gate",
+		"name": "homee KITCHEN",
+		"type": "餐廳",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "主食(牛肉麵,三杯雞,梅干扣肉,滷排骨), 飲料, 點心, 冰淇淋",
+		"startTime": "06:00",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/ghCy7MLJgVRt9Rtx8",
+		"Images": ""
+	  },
+	  {
+		"id": 46107321,
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "4F",
+		"name": "Oriental Club Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "00:00",
+		"endTime": "23:59",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/2hF3u23HkM3ZT1LZ9",
+		"Images": ""
+	  },
+	  {
+		"id": "869EEBBD",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Zone A",
+		"name": "Plaza Premium Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰",
+		"meals": "",
+		"startTime": "05:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/fE9p1w5JdbtBct3R8",
+		"Images": ""
+	  },
+	  {
+		"id": "9995D70E",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Zone A1",
+		"name": "Plaza Premium Lounge",
+		"type": "貴賓室",
+		"cards": "DP 龍騰, PP 新貴通",
+		"meals": "",
+		"startTime": "05:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/6g51VwgZTD7FrCZk6",
+		"Images": ""
+	  },
+	  {
+		"id": "3AA49A13",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "C3 Gate",
+		"name": "烙張清真牛肉麵",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "主食(麵類), 烙餅, 燙青菜, 飲料",
+		"startTime": "05:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/8A52fm76PNmkpaXt9",
+		"Images": ""
+	  },
+	  {
+		"id": "40BB2A49",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "4F",
+		"name": "萬芳冰室",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "主食(小籠包菠蘿油, 小籠包雲吞麵, 小籠包叉燒撈麵雲吞湯), 小菜, 珍奶",
+		"startTime": "07:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/UPL7CqPVxZDPQahp8",
+		"Images": ""
+	  },
+	  {
+		"id": "DD3D521D",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "C4 Gate",
+		"name": "樂沐糕餅鋪",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "四百台幣麵包",
+		"startTime": "05:30",
+		"endTime": "21:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/HXWr2B1KqmgYKqiU9",
+		"Images": ""
+	  },
+	  {
+		"id": "48AB85DE",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate D3",
+		"name": "D3 Bar",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "主餐(漢堡, 沙拉, 飯麵), 飲料, 甜點",
+		"startTime": "05:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/1endJrWNrERR8E2x5",
+		"Images": ""
+	  },
+	  {
+		"id": 69371480,
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "C3 Gate",
+		"name": "VWI Coffie bar",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "三明治,沙拉或蛋糕, 飲料",
+		"startTime": "06:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/kZcXRVHGEPm4moRW8",
+		"Images": ""
+	  },
+	  {
+		"id": "24252B34",
+		"country": "TW",
+		"airportName": "桃園國際機場",
+		"airportCode": "TPE",
+		"terminal": "T2",
+		"area": "出境管制區 (Airside)",
+		"location": "4F",
+		"name": "Wing Cafe",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "主餐(三明治, 可頌, 沙拉), 飲料, 甜點, 罐裝飲料",
+		"startTime": "05:00",
+		"endTime": "23:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/sZhNdyeAe7bWsuFh7",
+		"Images": ""
+	  },
+	  {
+		"id": "3D4B500C",
+		"country": "TW",
+		"airportName": "臺北松山機場",
+		"airportCode": "TSA",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "",
+		"name": "Plaza Premium Lounge",
+		"type": "貴賓室",
+		"cards": "PP 新貴通, DP 龍騰",
+		"meals": "",
+		"startTime": "05:30",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/1NJUqH39WhREWquw8",
+		"Images": ""
+	  },
+	  {
+		"id": "137443C7",
+		"country": "TW",
+		"airportName": "臺北松山機場",
+		"airportCode": "TSA",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 8",
+		"name": "homee KITCHEN",
+		"type": "餐廳",
+		"cards": "PP 新貴通, DP 龍騰",
+		"meals": "主食(牛肉麵,三杯雞,梅干扣肉,滷排骨), 飲料, 點心, 冰淇淋",
+		"startTime": "05:30",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "https://maps.app.goo.gl/5LXGuGbtwbkiwA1y7",
+		"Images": ""
+	  },
+	  {
+		"id": "44EE086D",
+		"country": "TW",
+		"airportName": "臺北松山機場",
+		"airportCode": "TSA",
+		"terminal": "T1",
+		"area": "出境管制區 (Airside)",
+		"location": "Gate 5",
+		"name": "Wing Cafe",
+		"type": "餐廳",
+		"cards": "DP 龍騰",
+		"meals": "主餐(三明治, 可頌, 沙拉), 飲料, 甜點, 罐裝飲料",
+		"startTime": "05:30",
+		"endTime": "20:00",
+		"note": "",
+		"googleMap": "",
+		"Images": ""
+	  }
+	];
+
+    const flags = { "AU": "🇦🇺", "JP": "🇯🇵" };
+
+    // 2. 篩選器的目前狀態 (State)
+    const filterState = {
+      country: 'all',
+      airport: 'all',
+      terminal: 'all',
+      area: 'all',
+      type: 'all',
+      card: 'all',
+      openNow: false
+    };
+
+    let currentView = 'CARD';
+
+    // DOM 節點
+    const filterCountry = document.getElementById('filter-country');
+    const filterAirport = document.getElementById('filter-airport');
+    const filterTerminal = document.getElementById('filter-terminal');
+    const filterArea = document.getElementById('filter-area');
+    const filterType = document.getElementById('filter-type');
+    const filterCard = document.getElementById('filter-card');
+    const filterOpenNow = document.getElementById('filter-open-now');
+    const dataContainer = document.getElementById('data-container');
+    const resultCount = document.getElementById('result-count');
+    const currentTimeDisplay = document.getElementById('current-time-display');
+
+    const btnViewCard = document.getElementById('btn-view-card');
+    const btnViewDetail = document.getElementById('btn-view-detail');
+
+    // 3. 系統初始化
+    function init() {
+      // 即時更新時鐘
+      updateTime();
+      setInterval(updateTime, 60000);
+
+      // 動態初始化與連動設定
+      buildCascadingFilters();
+
+      // 監聽各個選單的變動
+      filterCountry.addEventListener('change', (e) => {
+        filterState.country = e.target.value;
+        filterState.airport = 'all';
+        filterState.terminal = 'all';
+        filterState.area = 'all';
+        filterState.type = 'all';
+        buildCascadingFilters();
+        render();
+      });
+
+      filterAirport.addEventListener('change', (e) => {
+        filterState.airport = e.target.value;
+        filterState.terminal = 'all';
+        filterState.area = 'all';
+        filterState.type = 'all';
+        buildCascadingFilters();
+        render();
+      });
+
+      filterTerminal.addEventListener('change', (e) => {
+        filterState.terminal = e.target.value;
+        filterState.area = 'all';
+        filterState.type = 'all';
+        buildCascadingFilters();
+        render();
+      });
+
+      filterArea.addEventListener('change', (e) => {
+        filterState.area = e.target.value;
+        filterState.type = 'all';
+        buildCascadingFilters();
+        render();
+      });
+
+      filterType.addEventListener('change', (e) => {
+        filterState.type = e.target.value;
+        buildCascadingFilters();
+        render();
+      });
+
+      filterCard.addEventListener('change', (e) => {
+        filterState.card = e.target.value;
+        render();
+      });
+
+      filterOpenNow.addEventListener('change', (e) => {
+        filterState.openNow = e.target.checked;
+        render();
+      });
+
+      btnViewCard.addEventListener('click', () => setViewMode('CARD'));
+      btnViewDetail.addEventListener('click', () => setViewMode('DETAIL'));
+
+      render();
+    }
+
+    // 4. 動態與連動選單產生器
+    function buildCascadingFilters() {
+      // A. 第一層：國家列表
+      const countries = [...new Set(loungeData.map(item => item.country))];
+      filterState.country = rebuildSelect(filterCountry, countries, filterState.country, "全部國家");
+
+      // B. 第二層：依據目前所選國家篩選出的機場
+      const airportsData = loungeData.filter(item => filterState.country === 'all' || item.country === filterState.country);
+      const airports = [...new Set(airportsData.map(item => `${item.airportName} (${item.airportCode})`))];
+      filterState.airport = rebuildSelect(filterAirport, airports, filterState.airport, "全部機場");
+
+      // C. 第三層：依據所選國家與機場，篩選出的航廈
+      const terminalsData = airportsData.filter(item => filterState.airport === 'all' || `${item.airportName} (${item.airportCode})` === filterState.airport);
+      const terminals = [...new Set(terminalsData.map(item => item.terminal))];
+      filterState.terminal = rebuildSelect(filterTerminal, terminals, filterState.terminal, "全部航廈");
+
+      // D. 第四層：依據上述篩選，產出可用區域
+      const areasData = terminalsData.filter(item => filterState.terminal === 'all' || item.terminal === filterState.terminal);
+      const areas = [...new Set(areasData.map(item => item.area))];
+      filterState.area = rebuildSelect(filterArea, areas, filterState.area, "全部區域");
+
+      // E. 第五層：依據上述篩選，產出可用設施類型
+      const typesData = areasData.filter(item => filterState.area === 'all' || item.area === filterState.area);
+      const types = [...new Set(typesData.map(item => item.type))];
+      filterState.type = rebuildSelect(filterType, types, filterState.type, "全部類型");
+    }
+
+    // 重組 Select DOM 選項
+    function rebuildSelect(selectElement, itemsArray, currentValue, placeholderText) {
+      selectElement.innerHTML = `<option value="all">${placeholderText}</option>`;
+      let finalValue = 'all';
+
+      itemsArray.sort().forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item;
+        opt.textContent = item;
+        if (item === currentValue) {
+          opt.selected = true;
+          finalValue = item;
+        }
+        selectElement.appendChild(opt);
+      });
+
+      return finalValue;
+    }
+
+    // 5. 智慧地圖網址產生器與顯示名稱包裝
+    function getMapLinkHTML(item) {
+      const mapVal = item.googleMap.trim();
+      const isUrl = /^https?:\/\//i.test(mapVal);
+      
+      // 若欄位為真實網址，則直接使用；否則使用機場等關鍵字包裝
+      const url = isUrl 
+        ? mapVal 
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.airportName + ' ' + item.terminal + ' ' + mapVal)}`;
+      
+      // 顯示名稱替換：若是網址，使用您輸入的名稱(設施名稱)代替顯示；否則使用原本輸入的文字
+      const label = isUrl ? item.name : mapVal;
+
+	  return `
+	  <a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1 text-xs mt-1 font-semibold break-words">
+		<i data-lucide="map" class="w-3.5 h-3.5 shrink-0"></i>
+		<span>定位：${label}</span>
+	  </a>
+	  `;
+    }
+
+    // 6. 比對是否營業中的核心演算法 (支援跨午夜)
+    function checkIsOpenNow(startTimeStr, endTimeStr) {
+      if (!startTimeStr || !endTimeStr) return false;
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      const [startHour, startMin] = startTimeStr.split(':').map(Number);
+      const [endHour, endMin] = endTimeStr.split(':').map(Number);
+
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+
+      if (startMinutes <= endMinutes) {
+        return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+      } else {
+        return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+      }
+    }
+
+    // 更新顯示的系統時間
+    function updateTime() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      currentTimeDisplay.textContent = `${hours}:${minutes}`;
+    }
+
+    // 設定檢視模式
+    function setViewMode(mode) {
+      currentView = mode;
+      if (mode === 'CARD') {
+        btnViewCard.className = "px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-s-lg hover:bg-blue-100 focus:z-10 flex items-center gap-1 transition";
+        btnViewDetail.className = "px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-r border-gray-200 rounded-e-lg hover:bg-gray-50 hover:text-blue-700 focus:z-10 flex items-center gap-1 transition";
+      } else {
+        btnViewCard.className = "px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-l border-gray-200 rounded-s-lg hover:bg-gray-50 hover:text-blue-700 focus:z-10 flex items-center gap-1 transition";
+        btnViewDetail.className = "px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-e-lg hover:bg-blue-100 focus:z-10 flex items-center gap-1 transition";
+      }
+      render();
+    }
+
+    // 7. 圖片切換/輪播控制函數
+    window.changeSlide = function(id, direction) {
+      const container = document.getElementById(`carousel-${id}`);
+      if (!container) return;
+
+      const imagesAttr = container.getAttribute('data-images');
+      if (!imagesAttr) return;
+
+      const images = imagesAttr.split(',').map(img => img.trim()).filter(Boolean);
+      if (images.length <= 1) return;
+
+      let currentIndex = parseInt(container.getAttribute('data-current-index') || '0', 10);
+      currentIndex = (currentIndex + direction + images.length) % images.length;
+      container.setAttribute('data-current-index', currentIndex);
+
+      // 更新圖片 src
+      const imgElement = container.querySelector('.carousel-img');
+      imgElement.src = images[currentIndex];
+
+      // 更新指示點
+      const dots = container.querySelectorAll('.carousel-dot');
+      dots.forEach((dot, idx) => {
+        if (idx === currentIndex) {
+          dot.classList.add('bg-white');
+          dot.classList.remove('bg-white/50');
+        } else {
+          dot.classList.add('bg-white/50');
+          dot.classList.remove('bg-white');
+        }
+      });
+    }
+
+    // 8. 資料過濾與渲染
+    function render() {
+      const filteredData = loungeData.filter(item => {
+        if (filterState.country !== 'all' && item.country !== filterState.country) return false;
+        if (filterState.airport !== 'all' && `${item.airportName} (${item.airportCode})` !== filterState.airport) return false;
+        if (filterState.terminal !== 'all' && item.terminal !== filterState.terminal) return false;
+        if (filterState.area !== 'all' && item.area !== filterState.area) return false;
+        if (filterState.type !== 'all' && item.type !== filterState.type) return false;
+        
+        if (filterState.card !== 'all') {
+          if (filterState.card === 'PP' && !item.cards.includes('PP')) return false;
+          if (filterState.card === 'DP' && !item.cards.includes('DP')) return false;
+        }
+
+        if (filterState.openNow) {
+          if (!checkIsOpenNow(item.startTime, item.endTime)) return false;
+        }
+        return true;
+      });
+
+      resultCount.textContent = `共顯示 ${filteredData.length} 筆資料`;
+
+      if (filteredData.length === 0) {
+        dataContainer.innerHTML = `
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center text-gray-500">
+            <i data-lucide="info" class="w-12 h-12 text-gray-300 mx-auto mb-4"></i>
+            <p class="text-lg font-medium">沒有符合目前選取條件的貴賓室或餐廳</p>
+            <p class="text-sm mt-1">選單已自動過濾無關聯項目，請嘗試放寬上層篩選條件。</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      if (currentView === 'CARD') {
+        renderCardView(filteredData);
+      } else {
+        renderDetailView(filteredData);
+      }
+
+      lucide.createIcons();
+    }
+
+    // 9. 卡片版樣式 (新增輪播圖區塊)
+    function renderCardView(data) {
+      let html = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
+
+      data.forEach(item => {
+        const flag = flags[item.country] || "";
+        const isOpen = checkIsOpenNow(item.startTime, item.endTime);
+        const mapLinkHTML = getMapLinkHTML(item);
+        
+        // 處理圖片資料
+        const imageList = item.images ? item.images.split(',').map(img => img.trim()).filter(Boolean) : [];
+        let imageHeaderHTML = '';
+
+        if (imageList.length > 0) {
+          // 有多筆圖片時，顯示左右箭頭與圓點指示器
+          const hasMultiple = imageList.length > 1;
+          imageHeaderHTML = `
+            <div id="carousel-${item.id}" class="relative aspect-[16/10] w-full bg-gray-100 overflow-hidden" data-images="${item.images}" data-current-index="0">
+              <img src="${imageList[0]}" alt="${item.name}" class="carousel-img w-full h-full object-cover transition-all duration-300">
+              
+              ${hasMultiple ? `
+                <!-- 左右點擊箭頭 -->
+                <button onclick="changeSlide('${item.id}', -1)" class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1 rounded-full transition outline-none">
+                  <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+                <button onclick="changeSlide('${item.id}', 1)" class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1 rounded-full transition outline-none">
+                  <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </button>
+
+                <!-- 底部圓點指示器 -->
+                <div class="absolute bottom-2 left-1/2 -translate-y-1/2 -translate-x-1/2 flex gap-1 bg-black/20 px-2 py-1 rounded-full">
+                  ${imageList.map((_, idx) => `
+                    <span class="carousel-dot w-1.5 h-1.5 rounded-full transition-all ${idx === 0 ? 'bg-white' : 'bg-white/50'}"></span>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        const cardBadges = item.cards.split(',').map(c => {
+          const cleanVal = c.trim();
+          const badgeClass = cleanVal.includes('PP') ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-orange-50 text-orange-700 border-orange-200';
+          return `<span class="px-2 py-0.5 rounded text-xs border ${badgeClass}">${cleanVal}</span>`;
+        }).join(' ');
+
+        const statusBadge = isOpen 
+          ? `<span class="inline-flex items-center gap-1 bg-green-50 text-green-700 border border-green-200 text-xs px-2.5 py-1 rounded-full font-medium"><span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>營業中</span>`
+          : `<span class="inline-flex items-center gap-1 bg-gray-50 text-gray-400 border border-gray-200 text-xs px-2.5 py-1 rounded-full font-medium">非營業時間</span>`;
+
+        const typeBadge = item.type === '貴賓室'
+          ? `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-medium">${item.type}</span>`
+          : `<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full font-medium">${item.type}</span>`;
+
+        html += `
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition duration-200 overflow-hidden flex flex-col">
+            <!-- 圖片輪播區 -->
+            ${imageHeaderHTML}
+
+            <div class="p-5 flex-grow">
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <span class="text-xs text-gray-400 font-medium flex items-center gap-1">
+                  <span>${flag}</span> ${item.airportName} (${item.airportCode}) · ${item.terminal}
+                </span>
+                ${statusBadge}
+              </div>
+
+              <div class="flex items-start justify-between gap-2 mb-3">
+                <h3 class="font-bold text-lg text-gray-900 leading-snug">${item.name}</h3>
+                ${typeBadge}
+              </div>
+
+              <!-- 地點與超連結 -->
+              <div class="flex items-start gap-2 text-sm text-gray-500 mb-4 bg-gray-50 p-2.5 rounded-lg">
+                <i data-lucide="map-pin" class="w-4 h-4 text-red-400 mt-0.5 shrink-0"></i>
+                <div class="flex-grow">
+                  <p class="font-medium text-gray-700">${item.area} - ${item.location}</p>
+                  ${mapLinkHTML}
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 text-xs text-gray-500 mb-4">
+                <i data-lucide="clock" class="w-4 h-4 text-gray-400"></i>
+                <span>營業時間：<strong>${item.startTime} ~ ${item.endTime}</strong></span>
+              </div>
+
+              ${item.meals ? `
+              <div class="mb-3 text-xs text-gray-600">
+                <div class="font-bold text-gray-700 mb-1 flex items-center gap-1">
+                  <i data-lucide="utensils" class="w-3.5 h-3.5 text-orange-400"></i> 提供餐點
+                </div>
+                <p class="bg-orange-50/50 p-2 rounded border border-orange-100/50">${item.meals}</p>
+              </div>
+              ` : ''}
+
+              ${item.note ? `
+              <div class="text-xs text-gray-500 mb-2">
+                <span class="font-bold text-gray-700">備註：</span> ${item.note}
+              </div>
+              ` : ''}
+            </div>
+
+            <div class="bg-gray-50 px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-2">
+              <span class="text-xs font-semibold text-gray-400">適用卡別</span>
+              <div class="flex gap-1">
+                ${cardBadges}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      dataContainer.innerHTML = html;
+    }
+
+    // 10. 詳細列表版樣式
+    function renderDetailView(data) {
+      let html = `
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+				<thead>
+				  <tr class="bg-gray-50 border-b border-gray-100 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+					<th class="py-3.5 px-4 min-w-[120px]">國家/機場</th>
+					<th class="py-3.5 px-4 min-w-[160px]">位置 (航廈/區域/地點)</th>
+					<th class="py-3.5 px-4 min-w-[180px]">名稱/類型</th>
+					<th class="py-3.5 px-4 min-w-[130px]">營業時間/狀態</th>
+					<th class="py-3.5 px-4 min-w-[200px]">地圖引導</th>
+					<th class="py-3.5 px-4 min-w-[130px]">配合卡別</th>
+					<th class="py-3.5 px-4 min-w-[220px]">備註/餐點</th>
+				  </tr>
+				</thead>
+              <tbody class="divide-y divide-gray-100">
+      `;
+
+      data.forEach(item => {
+        const flag = flags[item.country] || "";
+        const isOpen = checkIsOpenNow(item.startTime, item.endTime);
+        const mapLinkHTML = getMapLinkHTML(item);
+
+        const statusBadge = isOpen 
+          ? `<span class="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-0.5 rounded text-xs border border-green-200"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>營業中</span>`
+          : `<span class="inline-flex items-center gap-1 text-gray-400 bg-gray-50 px-2 py-0.5 rounded text-xs border border-gray-200">非營業</span>`;
+
+        const typeBadge = item.type === '貴賓室'
+          ? `<span class="bg-blue-50 text-blue-700 border border-blue-200 text-[11px] px-1.5 py-0.5 rounded">${item.type}</span>`
+          : `<span class="bg-yellow-50 text-yellow-700 border border-yellow-200 text-[11px] px-1.5 py-0.5 rounded">${item.type}</span>`;
+
+        html += `
+			<tr class="hover:bg-gray-50/50 transition">
+			  <!-- 1. 國家/機場：不折行 -->
+			  <td class="py-4 px-4 whitespace-nowrap">
+				<div class="font-medium text-gray-900">${flag} ${item.airportName}</div>
+				<div class="text-xs text-gray-400">${item.airportCode}</div>
+			  </td>
+			  
+			  <!-- 2. 位置：允許自然折行 (已由表頭限制最小寬度) -->
+			  <td class="py-4 px-4">
+				<div class="text-gray-700 font-medium">${item.terminal} · ${item.location}</div>
+				<div class="text-xs text-gray-400 mt-1">${item.area}</div>
+			  </td>
+			  
+			  <!-- 3. 名稱/類型：名稱過長時允許自然折行，但保持 inline-flex -->
+			  <td class="py-4 px-4">
+				<div class="font-bold text-gray-900 inline-flex items-center gap-1.5 flex-wrap">${item.name} ${typeBadge}</div>
+			  </td>
+			  
+			  <!-- 4. 營業時間：不折行 -->
+			  <td class="py-4 px-4 whitespace-nowrap">
+				<div class="font-semibold text-gray-700">${item.startTime} - ${item.endTime}</div>
+				<div class="mt-1">${statusBadge}</div>
+			  </td>
+			  
+			  <!-- 5. 地圖引導：允許自然折行 -->
+			  <td class="py-4 px-4">
+				${mapLinkHTML}
+			  </td>
+			  
+			  <!-- 6. 配合卡別：不折行 -->
+			  <td class="py-4 px-4 whitespace-nowrap">
+				<div class="text-xs font-mono text-gray-600">${item.cards}</div>
+			  </td>
+			  
+			  <!-- 7. 備註/餐點：允許自然折行 -->
+			  <td class="py-4 px-4">
+				${item.meals ? `<div class="text-xs text-orange-700 bg-orange-50 px-2 py-1 rounded border border-orange-100/50 mb-1"><span class="font-bold">餐點：</span>${item.meals}</div>` : ''}
+				${item.note ? `<div class="text-xs text-gray-500"><span class="font-bold">備註：</span>${item.note}</div>` : ''}
+			  </td>
+			</tr>
+        `;
+      });
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+      dataContainer.innerHTML = html;
+    }
+
+    // 啟動頁面
+    document.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
