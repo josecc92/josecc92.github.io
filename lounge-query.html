@@ -228,6 +228,12 @@
       return a.localeCompare(b);
     }
 
+    // 國家顯示名稱格式化 (加上國旗)
+    function countryTextFormatter(code) {
+      const flag = flags[code] || "";
+      return flag ? `${flag} ${code}` : code;
+    }
+    
     // 主資料複合排序邏輯：國家 (TW 優先) -> 機場 -> 航廈 -> 設施類型 -> 區域 -> 設施名稱 (皆 A-Z 排序)
     function customLoungeSort(a, b) {
       // 1. 國家排序
@@ -423,7 +429,7 @@
     function buildCascadingFilters() {
       // A. 第一層：國家列表
       const countries = [...new Set(loungeData.map(item => item.country))];
-      filterState.country = rebuildSelect(filterCountry, countries, filterState.country, "全部國家", sortCountries);
+      filterState.country = rebuildSelect(filterCountry, countries, filterState.country, "全部國家", sortCountries, countryTextFormatter);
 
       // B. 第二層：依據目前所選國家篩選出的機場
       const airportsData = loungeData.filter(item => filterState.country === 'all' || item.country === filterState.country);
@@ -447,7 +453,7 @@
     }
 
     // 重組 Select DOM 選項 (支援傳入自訂排序邏輯，未傳入則預設 A-Z 排序)
-    function rebuildSelect(selectElement, itemsArray, currentValue, placeholderText, customSortFn) {
+    function rebuildSelect(selectElement, itemsArray, currentValue, placeholderText, customSortFn, textFormatterFn) {
       selectElement.innerHTML = `<option value="all">${placeholderText}</option>`;
       let finalValue = 'all';
 
@@ -456,7 +462,7 @@
       sortedItems.forEach(item => {
         const opt = document.createElement('option');
         opt.value = item;
-        opt.textContent = item;
+        opt.textContent = textFormatterFn ? textFormatterFn(item) : item;
         if (item === currentValue) {
           opt.selected = true;
           finalValue = item;
