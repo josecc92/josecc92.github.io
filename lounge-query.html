@@ -221,6 +221,53 @@
 	  });
 	}
 
+    // 排序輔助函數：國家排序邏輯 (TW 優先放在首位，其餘 A-Z 排序)
+    function sortCountries(a, b) {
+      if (a === 'TW' && b !== 'TW') return -1;
+      if (b === 'TW' && a !== 'TW') return 1;
+      return a.localeCompare(b);
+    }
+
+    // 主資料複合排序邏輯：國家 (TW 優先) -> 機場 -> 航廈 -> 設施類型 -> 區域 -> 設施名稱 (皆 A-Z 排序)
+    function customLoungeSort(a, b) {
+      // 1. 國家排序
+      const countryA = a.country || '';
+      const countryB = b.country || '';
+      if (countryA === 'TW' && countryB !== 'TW') return -1;
+      if (countryB === 'TW' && countryA !== 'TW') return 1;
+      const countryCompare = countryA.localeCompare(countryB);
+      if (countryCompare !== 0) return countryCompare;
+
+      // 2. 機場名稱排序
+      const airportA = a.airportName || '';
+      const airportB = b.airportName || '';
+      const airportCompare = airportA.localeCompare(airportB);
+      if (airportCompare !== 0) return airportCompare;
+
+      // 3. 航廈排序
+      const terminalA = a.terminal || '';
+      const terminalB = b.terminal || '';
+      const terminalCompare = terminalA.localeCompare(terminalB);
+      if (terminalCompare !== 0) return terminalCompare;
+
+      // 4. 設施類型排序 (type)
+      const typeA = a.type || '';
+      const typeB = b.type || '';
+      const typeCompare = typeA.localeCompare(typeB);
+      if (typeCompare !== 0) return typeCompare;
+
+      // 5. 區域排序 (area)
+      const areaA = a.area || '';
+      const areaB = b.area || '';
+      const areaCompare = areaA.localeCompare(areaB);
+      if (areaCompare !== 0) return areaCompare;
+
+      // 6. 設施名稱排序 (name)
+      const nameA = a.name || '';
+      const nameB = b.name || '';
+      return nameA.localeCompare(nameB);
+    }
+
     // 3. 系統初始化
     function init() {
       // 即時更新時鐘
@@ -234,14 +281,15 @@
 			// 這裡調用 transformChineseData 進行「中翻英」轉換
 			const translatedData = transformChineseData(results.data);
 			
-			// 過濾掉空行
-			loungeData = translatedData.filter(item => item.id); 
+			// 過濾掉空行，並依自定義權重進行基礎排序
+			loungeData = translatedData
+              .filter(item => item.id)
+              .sort(customLoungeSort); 
 			
 			// 執行後續的連動與渲染
 			buildCascadingFilters();
       
 			render();
-
 		  }
 		});
 
@@ -375,7 +423,7 @@
     function buildCascadingFilters() {
       // A. 第一層：國家列表
       const countries = [...new Set(loungeData.map(item => item.country))];
-      filterState.country = rebuildSelect(filterCountry, countries, filterState.country, "全部國家");
+      filterState.country = rebuildSelect(filterCountry, countries, filterState.country, "全部國家", sortCountries);
 
       // B. 第二層：依據目前所選國家篩選出的機場
       const airportsData = loungeData.filter(item => filterState.country === 'all' || item.country === filterState.country);
@@ -398,12 +446,14 @@
       filterState.type = rebuildSelect(filterType, types, filterState.type, "全部類型");
     }
 
-    // 重組 Select DOM 選項
-    function rebuildSelect(selectElement, itemsArray, currentValue, placeholderText) {
+    // 重組 Select DOM 選項 (支援傳入自訂排序邏輯，未傳入則預設 A-Z 排序)
+    function rebuildSelect(selectElement, itemsArray, currentValue, placeholderText, customSortFn) {
       selectElement.innerHTML = `<option value="all">${placeholderText}</option>`;
       let finalValue = 'all';
 
-      itemsArray.sort().forEach(item => {
+      const sortedItems = [...itemsArray].sort(customSortFn || ((a, b) => a.localeCompare(b)));
+
+      sortedItems.forEach(item => {
         const opt = document.createElement('option');
         opt.value = item;
         opt.textContent = item;
@@ -512,6 +562,7 @@
 
     // 8. 資料過濾與渲染
     function render() {
+      // 這裡篩選出的陣列，因為底層 loungeData 已經完成 customLoungeSort 排序，會自然保持正確的排序順序
       const filteredData = loungeData.filter(item => {
         if (filterState.country !== 'all' && item.country !== filterState.country) return false;
         if (filterState.airport !== 'all' && `${item.airportName} (${item.airportCode})` !== filterState.airport) return false;
