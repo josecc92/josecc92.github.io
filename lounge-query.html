@@ -470,7 +470,7 @@
         const mapLinkHTML = getMapLinkHTML(item);
         
         // 處理圖片資料
-        const imageList = item.images ? item.images.split(',').map(img => img.trim()).filter(Boolean) : [];
+        const imageList = item.images ? item.images.split(/[\n|]+/).map(img => img.trim()).filter(Boolean) : [];
         let imageHeaderHTML = '';
 
         if (imageList.length > 0) {
