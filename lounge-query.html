@@ -393,7 +393,7 @@
       const imagesAttr = container.getAttribute('data-images');
       if (!imagesAttr) return;
 
-      const images = imagesAttr.split(',').map(img => img.trim()).filter(Boolean);
+      const images = imagesAttr.split(/[\n|]+/).map(img => img.trim()).filter(Boolean);
       if (images.length <= 1) return;
 
       let currentIndex = parseInt(container.getAttribute('data-current-index') || '0', 10);
