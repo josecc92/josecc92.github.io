@@ -228,6 +228,13 @@
       return a.localeCompare(b);
     }
 
+    // 排序輔助函數：機場依機場代碼排序
+    function sortAirports(a, b) {
+      const codeA = (a.match(/\(([^)]+)\)/) || [])[1] || a;
+      const codeB = (b.match(/\(([^)]+)\)/) || [])[1] || b;
+      return codeA.localeCompare(codeB);
+    }
+
     // 國家顯示名稱格式化 (加上國旗)
     function countryTextFormatter(code) {
       const flag = flags[code] || "";
@@ -434,7 +441,7 @@
       // B. 第二層：依據目前所選國家篩選出的機場
       const airportsData = loungeData.filter(item => filterState.country === 'all' || item.country === filterState.country);
       const airports = [...new Set(airportsData.map(item => `${item.airportName} (${item.airportCode})`))];
-      filterState.airport = rebuildSelect(filterAirport, airports, filterState.airport, "全部機場");
+      filterState.airport = rebuildSelect(filterAirport, airports, filterState.airport, "全部機場", sortAirports);
 
       // C. 第三層：依據所選國家與機場，篩選出的航廈
       const terminalsData = airportsData.filter(item => filterState.airport === 'all' || `${item.airportName} (${item.airportCode})` === filterState.airport);
