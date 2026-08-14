@@ -673,7 +673,7 @@ function newState(name,pos,role){
     sh.forEach((k,i)=>{ pot[k]= i===0?ri(75,80) : i===1?ri(70,74) : i===2?ri(60,68) : ri(56,62); });
   }
   /* 高中固定分級表(隱藏):T1 名門 +6 / T2 中堅 ±0 / T3 弱旅 -6 */
-  const hsMap={'平鎮高中':1,'竹南高中':1,'穀保家商':1,'台中一中':2,'高苑工商':2,'北科附工':2,'普門高中':3,'東大體中':3,'彰化一中':3};
+  const hsMap={'平鎮高中':1,'穀保家商':1,'台中一中':2,'高苑工商':2,'北科附工':2,'新竹高中':2,'普門高中':3,'東大體中':3,'彰化一中':3,'竹南高中':3,'竹東高中':3};
   const schools=Object.keys(hsMap);
   const myTeam=schools[Math.floor(R()*schools.length)];
   return {name,pos,role:pos==='P'?null:null,age:16,year:2026,stage:'HS',stageYr:1,pot,
