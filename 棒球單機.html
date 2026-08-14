@@ -673,7 +673,7 @@ function newState(name,pos,role){
     sh.forEach((k,i)=>{ pot[k]= i===0?ri(75,80) : i===1?ri(70,74) : i===2?ri(60,68) : ri(56,62); });
   }
   /* 高中固定分級表(隱藏):T1 名門 +6 / T2 中堅 ±0 / T3 弱旅 -6 */
-  const hsMap={'明道高中':2,'內湖高中':2,'新竹高中':2,'彰化高中':3,'竹南高中':3,'竹東高中':3};
+  const hsMap={'新竹高中':2,'💵衛道高中💵':1,'明道高中':3,'內湖高中':2,'彰化高中':3,'竹南高中':3,'竹東高中':3};
   const schools=Object.keys(hsMap);
   const myTeam=schools[Math.floor(R()*schools.length)];
   return {name,pos,role:pos==='P'?null:null,age:16,year:2026,stage:'HS',stageYr:1,pot,
@@ -2614,7 +2614,7 @@ function runDraft(fromSchool,cb){
         const fresh = (S.stage==='HS');
         card('info', goUni?'重返校園':'重返業餘', `看到被選到的輪次，雙眼發黑，原本以為會在前段輪次被選中，卻落到了後段的輪次。你握緊了拳頭，決定${goUni?(fresh?'進入大學繼續深造':'留在校隊繼續磨練'):'重返業餘'}，這一次，你一定要上台戴上所屬球隊的帽子。`);
         if(fresh){ S.stage='U'; S.stageYr=0; S.team=pick(['成功大學','師範大學','海洋大學','台北大學','輔仁大學','國立體大','台灣體大','開南大學']); }
-        else if(!goUni){ S.stage='AMA'; S.team=pick(['台電','合作金庫','安永鮮物','綺麗珊瑚', '內湖甜心']); }
+        else if(!goUni){ S.stage='AMA'; S.team=pick(['黑橋牌','台電','合作金庫','安永鮮物','綺麗珊瑚','內湖甜心']); }
         if(fromSchool) cb(); else advance();
       }}]);
     return;
@@ -2624,11 +2624,11 @@ function runDraft(fromSchool,cb){
 function pathChoiceHS(){
   const o=ovr();
   const opts=[{t:'就讀大學（延長養成）',s:'一年僅 2 場大賽加點｜大二起每年可投入選秀',f:()=>{
-      S.stage='U'; S.stageYr=0; S.team=pick(['文化大學','輔仁大學','國立體大','台灣體大','開南大學']);
+      S.stage='U'; S.stageYr=0; S.team=pick(['成功大學','海洋大學','台北大學','師範大學','文化大學','輔仁大學','國立體大','台灣體大','開南大學']);
       card('info','升學',`進入 <b class="hl">${S.team}</b> 棒球隊。`); advance(); }},
     {t:'投入中華職棒選秀',s:'目前綜合 '+o,f:()=>runDraft(false,r=>{
       if(r==='fail')choose('落榜之後',[
-        {t:'改就讀大學',main:true,f:()=>{S.stage='U';S.stageYr=0;S.team=pick(['文化大學','輔仁大學','國立體大','台灣體大']);advance();}},
+        {t:'改就讀大學',main:true,f:()=>{S.stage='U';S.stageYr=0;S.team=pick(['成功大學','台北大學','海洋大學','師範大學','文化大學','輔仁大學','國立體大','台灣體大']);advance();}},
         {t:'加入業餘成棒隊',f:()=>{S.stage='AMA';S.team=pick(['合電','台庫','安妞先物','美麗珊瑚']);advance();}}]);
       else advance(); })}];
   if(o>=44)opts.push({t:'洽談旅日合約',s:'從日職二軍（支配下）出發｜滿 8 年視同本土',f:()=>{
@@ -2853,6 +2853,7 @@ function endGame(reason){
   if(S.age<25){
     const nm=S.name;
     const second=[
+      `你在球場外擺起了烤香腸攤。炭火陣陣飄香，攤位前卻冷冷清清、成天沒幾個人要買。偶爾有老球迷路過認出你，唏噓著當年的潛力新秀怎麼跑來賣香腸。你只是熟練地翻動香腸笑著說：「球速飆不出了，香腸還是得烤熟——界外球滾遠了，還是要自己撿回來。」`,
       `你加入了乙組業餘棒球隊。平日上班、週末穿上球衣，去年在協會盃敲出再見安打的影片被瘋傳，底下最熱門的留言是：「這揮棒不像業餘的。」——因為本來就不是。你比誰都清楚，愛棒球不一定要靠它吃飯。`,
       `你考到了不動產營業員執照。帶看時爬六樓透天面不改色，客戶都說你氣場不一樣——十六歲就在幾千人面前投球的人，還會怕開價嗎？三年後你成了店裡的銷售王，名片頭銜下面偷偷印了一行小字：「前職業棒球選手」。`,
       `你跟著舅舅去做板模。工地的日子曬得比春訓還黑，但你的核心力量和不服輸讓老師傅都點頭。五年後你自己出來帶班，薪水不比二軍差，而且——你笑著說——這裡沒有人會把你下放。`,
