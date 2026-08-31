@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信用卡帳單快速分帳工具 Ultimate Dashboard</title>
+    <!-- 引入 Chart.js 用於繪製圖表 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f5f6fa; color: #2f3640; }
+        .container { max-width: 1250px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2f3640; margin-top: 0; }
+        textarea { width: 100%; height: 100px; padding: 10px; font-family: monospace; border: 1px solid #dcdde1; border-radius: 4px; resize: vertical; }
+        button { background-color: #0097e6; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; font-size: 14px; margin-top: 10px; transition: background 0.2s; font-weight: bold; }
+        button:hover { background-color: #00a8ff; }
+        .btn-success { background-color: #44bd32; }
+        .btn-success:hover { background-color: #4cd137; }
+        
+        /* 表格樣式 */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        th, td { border: 1px solid #dcdde1; padding: 8px; text-align: left; }
+        th { background-color: #f5f6fa; position: sticky; top: 0; user-select: none; }
+        tr { cursor: pointer; transition: background 0.1s; }
+        
+        /* 排序相關 UI */
+        .sortable-th { cursor: pointer; transition: background 0.2s; }
+        .sortable-th:hover { background-color: #e1e8ed; }
+        .sort-icon { font-size: 11px; margin-left: 4px; color: #0097e6; display: inline-block; min-width: 12px; text-align: center; }
+
+        .active-group td { outline: 2px solid #0097e6; border-top: 2px solid #0097e6; border-bottom: 2px solid #0097e6; }
+        input[type="text"] { width: 90%; padding: 5px; border: 1px solid #ccc; border-radius: 3px; font-size: 13px; }
+        
+        /* 手續費與圖示 */
+        .fee-row td { color: #555; font-size: 0.9em; border-top: none; background-color: rgba(0,0,0,0.01); }
+        .fee-icon { display: inline-block; margin-left: 15px; border-left: 2px solid #aaa; border-bottom: 2px solid #aaa; width: 10px; height: 10px; margin-right: 5px; }
+
+        /* 標籤小藥丸 (Badge) */
+        .tag-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.3); }
+        
+        /* 主卡/附卡標籤 */
+        .card-badge { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .card-p { background: #dfe6e9; color: #2d3436; border: 1px solid #b2bec3; } 
+        .card-s { background: #ffeaa7; color: #d63031; border: 1px solid #fdcb6e; }
+
+        /* 佈局區塊 */
+        .instruction { background-color: #e8f6ff; padding: 12px; border-radius: 4px; margin: 15px 0; font-size: 14px; border-left: 4px solid #0097e6; line-height: 1.6; }
+        #workspace, #reportArea { display: none; }
+        
+        /* 關鍵字設定區塊 */
+        details { background: #fff; border: 1px solid #dcdde1; border-radius: 6px; margin-bottom: 20px; padding: 10px; }
+        summary { font-weight: bold; cursor: pointer; color: #0097e6; outline: none; user-select: none; }
+        summary:hover { color: #00a8ff; }
+        .settings-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 15px; }
+        .setting-row { display: flex; align-items: center; gap: 10px; }
+        .setting-row label { width: 140px; font-size: 14px; font-weight: bold; display: flex; align-items: center; }
+        .setting-row input { flex-grow: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; }
+        .settings-help { font-size: 12px; color: #7f8fa6; margin-top: 5px; }
+
+        /* 圖表與分頁區塊 */
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
+        .chart-card { background: #fff; border: 1px solid #e1e8ed; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .chart-container { position: relative; height: 220px; width: 100%; }
+
+        /* 分頁 (Tabs) 樣式 */
+        .tabs-container { margin-top: 30px; background: #fff; border: 1px solid #e1e8ed; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .tabs-header { display: flex; background: #f5f6fa; border-bottom: 1px solid #e1e8ed; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; font-size: 15px; font-weight: bold; color: #7f8fa6; cursor: pointer; transition: 0.2s; border-bottom: 3px solid transparent; margin-top: 0; border-radius: 0; }
+        .tab-btn:hover { color: #0097e6; background: #f0f2f5; }
+        .tab-btn.active { color: #0097e6; border-bottom: 3px solid #0097e6; background: #fff; }
+        .tab-content { display: none; padding: 20px; }
+        .tab-content.active { display: block; }
+        
+        /* 折疊明細列表樣式 */
+        .detail-group { background: #fff; border: 1px solid #dcdde1; border-radius: 6px; margin-bottom: 10px; overflow: hidden; }
+        .detail-summary { padding: 12px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 15px; background: #f8f9fa; user-select: none; transition: background 0.2s; }
+        .detail-summary:hover { background: #f1f2f6; }
+        .detail-title { font-weight: bold; color: #2f3640; display: flex; align-items: center; gap: 8px; }
+        .detail-stats { color: #555; }
+        .detail-content { padding: 0 15px 15px 15px; background: #fff; }
+        
+        .report-table th, .report-table td { padding: 6px 10px; font-size: 13px; }
+        .report-table th { background: #f5f6fa; border-bottom: 2px solid #dcdde1; }
+
+        .legend-container { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 5px; font-size: 14px; }
+        .legend-title { font-weight: bold; margin-right: 5px; width: 100%; color: #555; margin-top: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>💳 信用卡帳單分帳儀表板</h1>
+    
+    <!-- ⚙️ 關鍵字設定區塊 -->
+    <details id="keywordSettings">
+        <summary>⚙️ 展開設定：AI 自動分類關鍵字 (人工維護區)</summary>
+        <div class="settings-help">提示：請輸入商店名稱的關鍵字，多個關鍵字請用「半形逗號 (,)」或「全形逗號 (，)」隔開。</div>
+        <div class="settings-grid" id="settingsGrid"></div>
+        <button class="btn-success" onclick="saveKeywords()">💾 儲存關鍵字設定</button>
+        <span id="saveMsg" style="color: #44bd32; margin-left: 10px; display: none; font-weight: bold;">✔ 儲存成功！</span>
+    </details>
+
+    <div id="inputArea">
+        <label for="jsonInput" style="font-weight:bold;">請貼上包含 JSON 資料的文字：</label>
+        <textarea id="jsonInput" placeholder='{"success": true, "payload": [{...}]}'></textarea><br>
+        <button onclick="loadJSON()">載入資料並進行 AI 自動分類</button>
+    </div>
+
+    <div id="workspace">
+        <div class="instruction">
+            <strong>🎯 快捷鍵操作指南：</strong><br>
+            👤 <strong>歸屬人 (Alt + 數字)</strong>：<code>Alt+1~4</code> 指派人員，<code>Alt+0</code> 清除。<br>
+            🏷️ <strong>消費標籤 (Shift + 數字)</strong>：<code>Shift+1~7</code> 指派標籤，<code>Shift+0</code> 清除。<br>
+            💡 <strong>排序密技</strong>：點擊上方表頭 (例如「刷卡描述」)，可以將相同的消費排在一起，再用快捷鍵就能光速秒殺分類！
+        </div>
+        
+        <div id="legendPersonArea" class="legend-container"></div>
+        <div id="legendTagArea" class="legend-container"></div>
+
+        <table id="txTable">
+            <thead>
+                <tr>
+                    <th class="sortable-th" style="width: 105px;" onclick="handleSort('date')">消費日期 <span class="sort-icon" id="sort-date"></span></th>
+                    <th class="sortable-th" style="width: 90px;" onclick="handleSort('card')">卡別 <span class="sort-icon" id="sort-card"></span></th>
+                    <th class="sortable-th" style="width: 25%;" onclick="handleSort('desc')">刷卡描述 <span class="sort-icon" id="sort-desc"></span></th>
+                    <th class="sortable-th" onclick="handleSort('loc')">國家 <span class="sort-icon" id="sort-loc"></span></th>
+                    <th class="sortable-th" onclick="handleSort('foreign')">外幣 <span class="sort-icon" id="sort-foreign"></span></th>
+                    <th class="sortable-th" onclick="handleSort('ntd')">台幣(NTD) <span class="sort-icon" id="sort-ntd"></span></th>
+                    <th class="sortable-th" style="width: 90px;" onclick="handleSort('owner')">歸屬人 <span class="sort-icon" id="sort-owner"></span></th>
+                    <th class="sortable-th" style="width: 100px;" onclick="handleSort('tag')">標籤(Tag) <span class="sort-icon" id="sort-tag"></span></th>
+                    <th class="sortable-th" onclick="handleSort('note')">備註 <span class="sort-icon" id="sort-note"></span></th>
+                </tr>
+            </thead>
+            <tbody id="txBody"></tbody>
+        </table>
+        
+        <br>
+        <button class="btn-success" onclick="generateReport()">📊 產生圖表與結算總表</button>
+    </div>
+
+    <div id="reportArea">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2f3640; padding-bottom: 10px;">
+            <h2 style="margin: 0;">📑 結算與分析總表</h2>
+            <div id="reportContent" style="font-size:18px; font-weight: bold;"></div>
+            <div>
+                <button onclick="downloadCSV()">📥 下載 CSV</button>
+                <button style="background: #7f8fa6;" onclick="document.getElementById('reportArea').style.display='none'">隱藏報表</button>
+            </div>
+        </div>
+
+        <!-- 視覺化圖表區 -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h4 style="text-align: center; margin-top: 0;">👤 應付總額</h4>
+                <div class="chart-container"><canvas id="personChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h4 style="text-align: center; margin-top: 0;">🏷️ 消費類別</h4>
+                <div class="chart-container"><canvas id="tagChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h4 style="text-align: center; margin-top: 0;">🌍 國家佔比</h4>
+                <div class="chart-container"><canvas id="countryChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h4 style="text-align: center; margin-top: 0;">💵 幣別佔比</h4>
+                <div class="chart-container"><canvas id="currencyChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- 詳細數據分頁區 (Tabs) -->
+        <div class="tabs-container">
+            <div class="tabs-header">
+                <button class="tab-btn active" onclick="switchTab('tab-person')">👤 歸屬人明細 (點擊展開)</button>
+                <button class="tab-btn" onclick="switchTab('tab-tag')">🏷️ 標籤明細 (點擊展開)</button>
+                <button class="tab-btn" onclick="switchTab('tab-country')">🌍 國家明細 (點擊展開)</button>
+                <button class="tab-btn" onclick="switchTab('tab-currency')">💵 幣別明細 (點擊展開)</button>
+            </div>
+            
+            <div id="tab-person" class="tab-content active"><div id="list-person"></div></div>
+            <div id="tab-tag" class="tab-content"><div id="list-tag"></div></div>
+            <div id="tab-country" class="tab-content"><div id="list-country"></div></div>
+            <div id="tab-currency" class="tab-content"><div id="list-currency"></div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    /** ========================================================================
+     *  ⚙️ 基本設定區 
+     ======================================================================== */
+    const PERSON_CONFIG = [
+        { key: '1', name: 'Jose', color: '#ffcccc' },
+        { key: '2', name: 'Raini', color: '#ccffcc' },
+        { key: '3', name: '共同', color: '#ccccff' },
+    ];
+
+    const TAG_CONFIG = [
+        { key: '1', name: '餐點零食', color: '#ff7675', icon: '🍔' },
+        { key: '2', name: '活動票券', color: '#fdcb6e', icon: '🎫' },
+        { key: '3', name: '住宿費用', color: '#74b9ff', icon: '🏨' },
+        { key: '4', name: '機票交通', color: '#00cec9', icon: '✈️' },
+        { key: '5', name: '購物消費', color: '#a29bfe', icon: '🛍️' },
+        { key: '7', name: '代購代買', color: '#e17055', icon: '📦' },
+        { key: '6', name: '其他雜費', color: '#b2bec3', icon: '🛒' }, 
+    ];
+
+    const DEFAULT_KEYWORDS = {
+        '1': 'MCDONALDS, COLES, Food, Cafe, Dining, CATERING, ROMEOS, Coffee, Gelatissimo, 餐飲, 餐廳, 超市',
+        '2': 'ZOO, LunaPark, SEALIFE, Wildlife, MAGICMEMORIES, 票, 展覽',
+        '3': 'HOTEL, RESORT, 住宿, 飯店, 旅館',
+        '4': 'OPAL, METRO, TRANSPORT, AIR, UBER, 機票, 交通, 台鐵, 高鐵, 客運',
+        '5': 'CHEMIST, taobao, WHSMITH, GIFT, 百貨, 購物, 藥妝',
+        '7': 'JUMP, POCHIMART, PONYCANYON, ',
+        '6': '' 
+    };
+
+    /** ======================================================================== */
+
+    let currentKeywords = {}; 
+    let txGroups = []; 
+    let currentGroupIndex = -1;
+    let chartsInstance = {}; 
+
+    // 全域變數：目前排序狀態
+    let currentSortCol = 'date';
+    let currentSortOrder = 'asc';
+
+    function toHalfWidth(str) {
+        if (!str) return '';
+        return str.replace(/[\uff01-\uff5e]/g, function(ch) {
+            return String.fromCharCode(ch.charCodeAt(0) - 0xfee0);
+        }).replace(/\u3000/g, ' ');
+    }
+
+    function initUI() {
+        let styleHTML = '';
+        let personLegend = '<div class="legend-title">👥 人員快捷鍵 (Alt + 數字)</div>';
+        PERSON_CONFIG.forEach(p => {
+            styleHTML += `.person-${p.key} { background-color: ${p.color} !important; }\n`;
+            personLegend += `<span style="display:flex; align-items:center;"><span style="width:12px; height:12px; background:${p.color}; border:1px solid #aaa; margin-right:5px;"></span>${p.name} (Alt+${p.key})</span>`;
+        });
+        personLegend += `<span style="display:flex; align-items:center;"><span style="width:12px; height:12px; background:#fff; border:1px solid #aaa; margin-right:5px;"></span>未分類 (Alt+0)</span>`;
+
+        let tagLegend = '<div class="legend-title">🏷️ 分類快捷鍵 (Shift + 數字)</div>';
+        [...TAG_CONFIG].sort((a,b) => a.key.localeCompare(b.key)).forEach(t => {
+            tagLegend += `<span><span class="tag-badge" style="background:${t.color};">${t.icon} ${t.name}</span> (Shift+${t.key})</span>`;
+        });
+        tagLegend += `<span><span class="tag-badge" style="background:#ddd; color:#555;">未分類</span> (Shift+0)</span>`;
+
+        document.head.insertAdjacentHTML('beforeend', `<style>${styleHTML}</style>`);
+        document.getElementById('legendPersonArea').innerHTML = personLegend;
+        document.getElementById('legendTagArea').innerHTML = tagLegend;
+
+        const savedData = localStorage.getItem('creditCardAutoTags');
+        if (savedData) {
+            try { currentKeywords = JSON.parse(savedData); } catch (e) { currentKeywords = {...DEFAULT_KEYWORDS}; }
+        } else {
+            currentKeywords = {...DEFAULT_KEYWORDS};
+        }
+        
+        Object.keys(DEFAULT_KEYWORDS).forEach(k => {
+            if (currentKeywords[k] === undefined) currentKeywords[k] = DEFAULT_KEYWORDS[k];
+        });
+
+        const grid = document.getElementById('settingsGrid');
+        TAG_CONFIG.forEach(t => {
+            if (t.key === '6') return; 
+            const row = document.createElement('div');
+            row.className = 'setting-row';
+            row.innerHTML = `
+                <label><span class="tag-badge" style="background:${t.color}; width:80px; text-align:center;">${t.icon} ${t.name}</span></label>
+                <input type="text" id="kw_${t.key}" value="${currentKeywords[t.key] || ''}" placeholder="輸入關鍵字，用逗號隔開...">
+            `;
+            grid.appendChild(row);
+        });
+    }
+
+    function saveKeywords() {
+        TAG_CONFIG.forEach(t => {
+            if (t.key === '6') return;
+            const input = document.getElementById(`kw_${t.key}`);
+            if (input) currentKeywords[t.key] = input.value;
+        });
+        localStorage.setItem('creditCardAutoTags', JSON.stringify(currentKeywords));
+        
+        const msg = document.getElementById('saveMsg');
+        msg.style.display = 'inline';
+        setTimeout(() => msg.style.display = 'none', 3000);
+    }
+
+    initUI();
+
+    function guessTag(description) {
+        if (!description) return '6';
+        const normalDesc = toHalfWidth(description).toUpperCase();
+        for (let tag of TAG_CONFIG) {
+            if (tag.key === '6') continue; 
+            let kwString = currentKeywords[tag.key] || '';
+            let keywords = kwString.replace(/，/g, ',').split(',').map(w => toHalfWidth(w).trim().toUpperCase()).filter(w => w);
+            for (let word of keywords) {
+                if (normalDesc.includes(word)) { return tag.key; }
+            }
+        }
+        return '6'; 
+    }
+
+    // ==========================================
+    // 多重排序邏輯 (核心升級)
+    // ==========================================
+    function getSortValue(group, col) {
+        const m = group.main;
+        switch(col) {
+            case 'date': return m.txnDate || '';
+            case 'card': return (m.relationShip || '') + (m.cardNo || '');
+            case 'desc': return toHalfWidth(m.description || '').toUpperCase();
+            case 'loc': return m.txnLoc || '';
+            // 外幣排序：先排幣別英文字，再加上補0對齊的數字
+            case 'foreign': return (m.amtCy || '') + (parseFloat(m.amount) || 0).toFixed(2).padStart(15, '0');
+            case 'ntd': return parseFloat(m.ntdAmount) || 0;
+            case 'owner':
+                const p = PERSON_CONFIG.find(x => x.key === m.ownerKey);
+                return p ? p.name : '未分類';
+            case 'tag':
+                const t = TAG_CONFIG.find(x => x.key === m.tagKey);
+                return t ? t.name : '未分類';
+            case 'note': return m.note || '';
+            default: return '';
+        }
+    }
+
+    function compareValues(valA, valB, order) {
+        if (typeof valA === 'number' && typeof valB === 'number') {
+            return order === 'asc' ? valA - valB : valB - valA;
+        }
+        valA = String(valA);
+        valB = String(valB);
+        let cmp = valA.localeCompare(valB);
+        return order === 'asc' ? cmp : -cmp;
+    }
+
+    function executeSorting() {
+        // 為了確保當下選取的目標不跑掉，記錄選取物件的參照
+        let selectedMain = currentGroupIndex !== -1 && txGroups[currentGroupIndex] ? txGroups[currentGroupIndex].main : null;
+
+        txGroups.sort((a, b) => {
+            // 1. 第一排序準則 (使用者點選的欄位)
+            let valA = getSortValue(a, currentSortCol);
+            let valB = getSortValue(b, currentSortCol);
+            let cmp1 = compareValues(valA, valB, currentSortOrder);
+            if (cmp1 !== 0) return cmp1;
+
+            // 2. 第二排序準則 (日期 ASC)
+            let dateA = a.main.txnDate || '';
+            let dateB = b.main.txnDate || '';
+            let cmp2 = dateA.localeCompare(dateB);
+            if (cmp2 !== 0) return cmp2;
+
+            // 3. 第三排序準則 (描述 ASC)
+            let descA = toHalfWidth(a.main.description || '').toUpperCase();
+            let descB = toHalfWidth(b.main.description || '').toUpperCase();
+            return descA.localeCompare(descB);
+        });
+
+        // 重新對齊選取的索引
+        if (selectedMain) {
+            currentGroupIndex = txGroups.findIndex(g => g.main === selectedMain);
+        }
+    }
+
+    function updateHeaderUI() {
+        const cols = ['date', 'card', 'desc', 'loc', 'foreign', 'ntd', 'owner', 'tag', 'note'];
+        cols.forEach(c => {
+            const el = document.getElementById('sort-' + c);
+            if (el) {
+                if (c === currentSortCol) {
+                    el.innerHTML = currentSortOrder === 'asc' ? '▲' : '▼';
+                } else {
+                    el.innerHTML = '';
+                }
+            }
+        });
+    }
+
+    function handleSort(col) {
+        if (currentSortCol === col) {
+            currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSortCol = col;
+            currentSortOrder = 'asc';
+        }
+        executeSorting();
+        updateHeaderUI();
+        renderTable();
+        // 將視窗捲動到當前選取的項目以確保 UX
+        if (currentGroupIndex !== -1) {
+            const el = document.getElementById(`group-${currentGroupIndex}-main`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function loadJSON() {
+        try {
+            const raw = document.getElementById('jsonInput').value;
+            let parsed = JSON.parse(raw);
+            let rawTransactions = parsed.payload && Array.isArray(parsed.payload) ? parsed.payload : Array.isArray(parsed) ? parsed : null;
+            if (!rawTransactions) throw new Error("找不到陣列資料");
+
+            rawTransactions = rawTransactions.filter(tx => parseFloat(tx.ntdAmount) > 0);
+
+            let mains = [];
+            let fees = [];
+            rawTransactions.forEach(tx => {
+                tx.ownerKey = '0'; tx.note = ''; tx.tagKey = '0'; 
+                if (tx.description.includes('手續費') || tx.description.toUpperCase().includes('FEE')) { fees.push(tx); } 
+                else { tx.tagKey = guessTag(tx.description); mains.push(tx); }
+            });
+
+            txGroups = mains.map(m => ({ main: m, fees: [], isStandaloneFee: false }));
+
+            fees.forEach(fee => {
+                let feeNtd = parseFloat(fee.ntdAmount);
+                let keyword = fee.description.replace(/國外交易手續費/g, '').trim();
+                let candidates = txGroups.filter(g => g.main.txnDate === fee.txnDate);
+                let bestMatch = null;
+
+                if (candidates.length > 0) {
+                    let nameMatches = candidates.filter(g => keyword && (g.main.description.includes(keyword) || keyword.includes(g.main.description.substring(0, keyword.length))));
+                    let pool = nameMatches.length > 0 ? nameMatches : candidates;
+                    let amountMatches = pool.filter(g => Math.abs(feeNtd - (parseFloat(g.main.ntdAmount) * 0.015)) <= 2);
+                    pool = amountMatches.length > 0 ? amountMatches : pool;
+                    let emptySlotMatches = pool.filter(g => g.fees.length === 0);
+                    bestMatch = emptySlotMatches.length > 0 ? emptySlotMatches[0] : pool[0];
+                }
+
+                if (bestMatch) {
+                    fee.tagKey = bestMatch.main.tagKey; 
+                    fee.relationShip = bestMatch.main.relationShip;
+                    fee.cardNo = bestMatch.main.cardNo;
+                    bestMatch.fees.push(fee);
+                } else {
+                    fee.tagKey = guessTag(fee.description); 
+                    txGroups.push({ main: fee, fees: [], isStandaloneFee: true });
+                }
+            });
+
+            // 預設第一次載入使用「日期 ASC」排序
+            currentSortCol = 'date';
+            currentSortOrder = 'asc';
+            executeSorting();
+            updateHeaderUI();
+
+            document.getElementById('keywordSettings').removeAttribute('open'); 
+            document.getElementById('inputArea').style.display = 'none';
+            document.getElementById('workspace').style.display = 'block';
+            renderTable();
+            if(txGroups.length > 0) selectGroup(0);
+
+        } catch (e) { alert("資料解析錯誤：" + e.message); }
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('txBody');
+        tbody.innerHTML = '';
+        txGroups.forEach((group, gIndex) => {
+            tbody.appendChild(createRowHTML(group.main, gIndex, 'main'));
+            group.fees.forEach((fee, fIndex) => {
+                tbody.appendChild(createRowHTML(fee, gIndex, 'fee', fIndex));
+            });
+        });
+    }
+
+    function createRowHTML(tx, gIndex, type, fIndex = 0) {
+        const tr = document.createElement('tr');
+        tr.id = type === 'main' ? `group-${gIndex}-main` : `group-${gIndex}-fee-${fIndex}`;
+        tr.className = `group-row-${gIndex} ${type === 'fee' ? 'fee-row' : ''} ${getPersonClass(tx.ownerKey)}`;
+        tr.onclick = () => selectGroup(gIndex);
+
+        const isStandalone = type === 'main' && txGroups[gIndex].isStandaloneFee;
+        const descHTML = (type === 'fee' || isStandalone) ? `<div class="fee-icon"></div> ${tx.description}` : tx.description;
+        
+        let cardHTML = '<span style="color:#aaa;">-</span>';
+        if (tx.relationShip === 'P') cardHTML = `<span class="card-badge card-p">主卡 *${tx.cardNo}</span>`;
+        else if (tx.relationShip === 'S') cardHTML = `<span class="card-badge card-s">附卡 *${tx.cardNo}</span>`;
+        else if (tx.cardNo) cardHTML = `<span class="card-badge" style="background:#ddd;">*${tx.cardNo}</span>`;
+
+        tr.innerHTML = `
+            <td>${tx.txnDate}</td>
+            <td>${cardHTML}</td>
+            <td>${descHTML}</td>
+            <td>${tx.txnLoc.trim() || '-'}</td>
+            <td>${tx.amtCy.trim() || 'TWD'} ${tx.amount > 0 ? tx.amount : ''}</td>
+            <td style="font-weight:bold; text-align:right;">${tx.ntdAmount}</td>
+            <td class="owner-display-${gIndex}">${getPersonNameHTML(tx.ownerKey)}</td>
+            <td class="tag-display-${gIndex}">${getTagHTML(tx.tagKey)}</td>
+            <td>
+                <input type="text" value="${tx.note}" placeholder="${type === 'main' ? '備註...' : ''}" 
+                       onchange="updateNote(${gIndex}, '${type}', ${fIndex}, this.value)"
+                       onclick="event.stopPropagation(); selectGroup(${gIndex});">
+            </td>
+        `;
+        return tr;
+    }
+
+    function getPersonClass(key) { const p = PERSON_CONFIG.find(p => p.key === key); return p ? `person-${p.key}` : ''; }
+    function getPersonNameHTML(key) { const p = PERSON_CONFIG.find(p => p.key === key); return p ? `<strong>${p.name}</strong>` : `<span style="color:#aaa;">-</span>`; }
+    function getTagHTML(key) {
+        const t = TAG_CONFIG.find(t => t.key === key);
+        return t ? `<span class="tag-badge" style="background:${t.color};">${t.icon} ${t.name}</span>` : `<span class="tag-badge" style="background:#ddd; color:#555;">未分類</span>`;
+    }
+    function updateNote(gIndex, type, fIndex, value) {
+        if(type === 'main') txGroups[gIndex].main.note = value; else txGroups[gIndex].fees[fIndex].note = value;
+    }
+
+    function selectGroup(gIndex) {
+        document.querySelectorAll('.active-group').forEach(el => el.classList.remove('active-group'));
+        currentGroupIndex = gIndex;
+        const rows = document.querySelectorAll(`.group-row-${gIndex}`);
+        rows.forEach(r => r.classList.add('active-group'));
+        // 這裡避免多次捲動造成閃爍，所以交由 handleSort 控制或只做 nearest 捲動
+    }
+
+    function assignPerson(key) {
+        if (currentGroupIndex === -1) return;
+        if (key !== '0' && !PERSON_CONFIG.find(p => p.key === key)) return;
+        const group = txGroups[currentGroupIndex];
+        group.main.ownerKey = key; group.fees.forEach(fee => fee.ownerKey = key);
+        
+        const rows = document.querySelectorAll(`.group-row-${currentGroupIndex}`);
+        const pClass = getPersonClass(key);
+        rows.forEach(row => { row.className = row.className.replace(/person-\d/g, '').trim(); if (pClass) row.classList.add(pClass); });
+        document.querySelectorAll(`.owner-display-${currentGroupIndex}`).forEach(td => td.innerHTML = getPersonNameHTML(key));
+        
+        if (currentGroupIndex < txGroups.length - 1) {
+            selectGroup(currentGroupIndex + 1);
+            // 當使用鍵盤快捷鍵快速下移時，確保畫面跟隨
+            const el = document.getElementById(`group-${currentGroupIndex}-main`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function assignTag(key) {
+        if (currentGroupIndex === -1) return;
+        if (key !== '0' && !TAG_CONFIG.find(t => t.key === key)) return;
+        const group = txGroups[currentGroupIndex];
+        group.main.tagKey = key; group.fees.forEach(fee => fee.tagKey = key);
+        document.querySelectorAll(`.tag-display-${currentGroupIndex}`).forEach(td => td.innerHTML = getTagHTML(key));
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName.toLowerCase() === 'input') return;
+        let numKey = e.key;
+        if (e.code && (e.code.startsWith('Digit') || e.code.startsWith('Numpad'))) { numKey = e.code.replace('Digit', '').replace('Numpad', ''); }
+        if (e.altKey) { e.preventDefault(); assignPerson(numKey); } 
+        else if (e.shiftKey) { e.preventDefault(); assignTag(numKey); }
+    });
+
+    // ==========================================
+    // 分頁切換功能 (Tabs)
+    // ==========================================
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+    }
+
+    function buildDetailHTML(titleHTML, count, amount, items, showPerson = true, showTag = true) {
+        let html = `<details class="detail-group">
+            <summary class="detail-summary">
+                <span class="detail-title">${titleHTML}</span>
+                <span class="detail-stats">${count} 筆 (已含手續費) ｜ 總計: <strong style="color:#d63031; font-size:16px;">$${amount.toLocaleString()}</strong></span>
+            </summary>
+            <div class="detail-content">
+                <table class="report-table" style="width:100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">日期</th>
+                            <th>刷卡描述 (主消費)</th>
+                            ${showPerson ? '<th style="width: 90px;">歸屬人</th>' : ''}
+                            ${showTag ? '<th style="width: 100px;">標籤</th>' : ''}
+                            <th style="width: 120px; text-align: right;">真實花費(NTD)</th>
+                            <th>備註</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+        
+        items.forEach(g => {
+            let desc = g.main.description;
+            if(g.fees.length > 0) {
+                desc += ` <span style="font-size:11px; color:#0097e6; font-weight:bold; background:#e8f6ff; padding:2px 6px; border-radius:10px;">+${g.fees.length}筆手續費</span>`;
+            }
+            let totalNtd = parseFloat(g.main.ntdAmount) || 0;
+            g.fees.forEach(f => totalNtd += parseFloat(f.ntdAmount) || 0);
+            
+            html += `<tr>
+                <td>${g.main.txnDate}</td>
+                <td>${desc}</td>
+                ${showPerson ? `<td>${getPersonNameHTML(g.main.ownerKey)}</td>` : ''}
+                ${showTag ? `<td>${getTagHTML(g.main.tagKey)}</td>` : ''}
+                <td style="text-align: right; font-weight:bold;">$${totalNtd.toLocaleString()}</td>
+                <td style="color:#555;">${g.main.note || '-'}</td>
+            </tr>`;
+        });
+        
+        html += `</tbody></table></div></details>`;
+        return html;
+    }
+
+
+    function generateReport() {
+        const reportArea = document.getElementById('reportArea');
+        reportArea.style.display = 'block';
+        
+        let dataPerson = { '0': { amount: 0, count: 0, items: [] } }; 
+        PERSON_CONFIG.forEach(p => dataPerson[p.key] = { amount: 0, count: 0, items: [] });
+        
+        let dataTag = { '0': { amount: 0, count: 0, items: [] } };
+        TAG_CONFIG.forEach(t => dataTag[t.key] = { amount: 0, count: 0, items: [] });
+
+        let dataCountry = {}; let dataCurrency = {}; let grandTotal = 0;
+
+        txGroups.forEach(group => {
+            let owner = group.main.ownerKey;
+            let tag = group.main.tagKey;
+            let loc = group.main.txnLoc.trim() || 'TW/Online';
+            let cy = group.main.amtCy.trim() || 'TWD';
+
+            dataPerson[owner].count += 1; dataPerson[owner].items.push(group);
+            dataTag[tag].count += 1; dataTag[tag].items.push(group);
+
+            if (!dataCountry[loc]) dataCountry[loc] = { amount: 0, count: 0, items: [] };
+            dataCountry[loc].count += 1; dataCountry[loc].items.push(group);
+
+            if (!dataCurrency[cy]) dataCurrency[cy] = { amount: 0, count: 0, items: [] };
+            dataCurrency[cy].count += 1; dataCurrency[cy].items.push(group);
+
+            const addAmount = (tx) => {
+                let ntd = parseFloat(tx.ntdAmount) || 0;
+                grandTotal += ntd;
+                dataPerson[owner].amount += ntd;
+                dataTag[tag].amount += ntd;
+                dataCountry[loc].amount += ntd;
+                dataCurrency[cy].amount += ntd;
+            };
+            addAmount(group.main);
+            group.fees.forEach(addAmount);
+        });
+
+        document.getElementById('reportContent').innerHTML = `應繳總額：<span style="color:#e84118;">$${grandTotal.toLocaleString()}</span> NTD`;
+
+        let htmlPerson = '';
+        PERSON_CONFIG.forEach(p => {
+            if(dataPerson[p.key].count > 0) htmlPerson += buildDetailHTML(`👥 ${p.name}`, dataPerson[p.key].count, dataPerson[p.key].amount, dataPerson[p.key].items, false, true);
+        });
+        if(dataPerson['0'].count > 0) htmlPerson += buildDetailHTML(`👥 未分類`, dataPerson['0'].count, dataPerson['0'].amount, dataPerson['0'].items, false, true);
+        document.getElementById('list-person').innerHTML = htmlPerson;
+
+        let htmlTag = '';
+        TAG_CONFIG.forEach(t => {
+            if(dataTag[t.key].count > 0) htmlTag += buildDetailHTML(getTagHTML(t.key), dataTag[t.key].count, dataTag[t.key].amount, dataTag[t.key].items, true, false);
+        });
+        if(dataTag['0'].count > 0) htmlTag += buildDetailHTML(getTagHTML('0'), dataTag['0'].count, dataTag['0'].amount, dataTag['0'].items, true, false);
+        document.getElementById('list-tag').innerHTML = htmlTag;
+
+        let htmlCountry = '';
+        Object.keys(dataCountry).sort((a,b) => dataCountry[b].amount - dataCountry[a].amount).forEach(k => {
+            htmlCountry += buildDetailHTML(`🌍 ${k}`, dataCountry[k].count, dataCountry[k].amount, dataCountry[k].items, true, true);
+        });
+        document.getElementById('list-country').innerHTML = htmlCountry;
+
+        let htmlCurrency = '';
+        Object.keys(dataCurrency).sort((a,b) => dataCurrency[b].amount - dataCurrency[a].amount).forEach(k => {
+            htmlCurrency += buildDetailHTML(`💵 ${k}`, dataCurrency[k].count, dataCurrency[k].amount, dataCurrency[k].items, true, true);
+        });
+        document.getElementById('list-currency').innerHTML = htmlCurrency;
+
+        Object.keys(chartsInstance).forEach(k => chartsInstance[k].destroy());
+
+        function createChart(canvasId, type, labels, data, counts, bgColors) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            return new Chart(ctx, {
+                type: type,
+                data: { labels: labels, datasets: [{ data: data, counts: counts, backgroundColor: bgColors, borderWidth: 1 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { position: type === 'pie' || type === 'doughnut' ? 'right' : 'none', labels: { boxWidth: 12, padding: 10 } },
+                        tooltip: { callbacks: { label: function(c) { return ` $${c.raw.toLocaleString()} NTD (${c.dataset.counts[c.dataIndex]} 筆)`; } } }
+                    }
+                }
+            });
+        }
+
+        let pLabels = [], pData = [], pCounts = [], pColors = [];
+        PERSON_CONFIG.forEach(p => { 
+            if(dataPerson[p.key].count > 0) { pLabels.push(p.name); pData.push(dataPerson[p.key].amount); pCounts.push(dataPerson[p.key].count); pColors.push(p.color); }
+        });
+        if(dataPerson['0'].count > 0) { pLabels.push('未分類'); pData.push(dataPerson['0'].amount); pCounts.push(dataPerson['0'].count); pColors.push('#ddd'); }
+        chartsInstance['person'] = createChart('personChart', 'bar', pLabels, pData, pCounts, pColors);
+
+        let tLabels = [], tData = [], tCounts = [], tColors = [];
+        TAG_CONFIG.forEach(t => { 
+            if(dataTag[t.key].count > 0) { tLabels.push(t.name); tData.push(dataTag[t.key].amount); tCounts.push(dataTag[t.key].count); tColors.push(t.color); }
+        });
+        if(dataTag['0'].count > 0) { tLabels.push('未分類'); tData.push(dataTag['0'].amount); tCounts.push(dataTag['0'].count); tColors.push('#ddd'); }
+        chartsInstance['tag'] = createChart('tagChart', 'doughnut', tLabels, tData, tCounts, tColors);
+
+        let cLabels = Object.keys(dataCountry).sort((a,b) => dataCountry[b].amount - dataCountry[a].amount);
+        let cData = cLabels.map(k => dataCountry[k].amount);
+        let cCounts = cLabels.map(k => dataCountry[k].count);
+        let cColors = cLabels.map((_, i) => `hsl(${i * 60 + 20}, 70%, 65%)`);
+        chartsInstance['country'] = createChart('countryChart', 'pie', cLabels, cData, cCounts, cColors);
+
+        let cyLabels = Object.keys(dataCurrency).sort((a,b) => dataCurrency[b].amount - dataCurrency[a].amount);
+        let cyData = cyLabels.map(k => dataCurrency[k].amount);
+        let cyCounts = cyLabels.map(k => dataCurrency[k].count);
+        let cyColors = cyLabels.map((_, i) => `hsl(${i * 80 + 200}, 70%, 65%)`);
+        chartsInstance['currency'] = createChart('currencyChart', 'pie', cyLabels, cyData, cyCounts, cyColors);
+
+        reportArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function downloadCSV() {
+        let csvContent = "\uFEFF消費日期,卡別,卡號,刷卡描述,國家,幣別,外幣金額,台幣金額,歸屬人,分類標籤,備註\n";
+        const addRow = (tx) => {
+            const p = PERSON_CONFIG.find(p => p.key === tx.ownerKey);
+            const ownerName = tx.ownerKey === '0' ? '未分類' : (p ? p.name : '未知');
+            const t = TAG_CONFIG.find(t => t.key === tx.tagKey);
+            const tagName = tx.tagKey === '0' ? '未分類' : (t ? t.name : '未知');
+            let cardType = '';
+            if (tx.relationShip === 'P') cardType = '主卡'; else if (tx.relationShip === 'S') cardType = '附卡';
+            const safeDesc = `"${(tx.description || '').replace(/"/g, '""')}"`;
+            const safeNote = `"${(tx.note || '').replace(/"/g, '""')}"`;
+            csvContent += `${tx.txnDate},${cardType},${tx.cardNo || ''},${safeDesc},${tx.txnLoc.trim()},${tx.amtCy.trim() || 'TWD'},${tx.amount},${tx.ntdAmount},${ownerName},${tagName},${safeNote}\n`;
+        };
+        txGroups.forEach(group => { addRow(group.main); group.fees.forEach(addRow); });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
+        link.download = "credit_card_dashboard_report.csv"; link.style.visibility = 'hidden';
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+</script>
+
+</body>
+</html>
