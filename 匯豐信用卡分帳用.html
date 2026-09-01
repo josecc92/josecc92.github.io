@@ -564,47 +564,58 @@
         document.getElementById(tabId).classList.add('active');
     }
 
-    function buildDetailHTML(titleHTML, count, amount, items, showPerson = true, showTag = true) {
-        let html = `<details class="detail-group">
-            <summary class="detail-summary">
-                <span class="detail-title">${titleHTML}</span>
-                <span class="detail-stats">${count} 筆 (已含手續費) ｜ 總計: <strong style="color:#d63031; font-size:16px;">$${amount.toLocaleString()}</strong></span>
-            </summary>
-            <div class="detail-content">
-                <table class="report-table" style="width:100%; border-collapse: collapse; margin-top: 10px;">
-                    <thead>
-                        <tr>
-                            <th style="width: 100px;">日期</th>
-                            <th>刷卡描述 (主消費)</th>
-                            ${showPerson ? '<th style="width: 90px;">歸屬人</th>' : ''}
-                            ${showTag ? '<th style="width: 100px;">標籤</th>' : ''}
-                            <th style="width: 120px; text-align: right;">真實花費(NTD)</th>
-                            <th>備註</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-        
-        items.forEach(g => {
-            let desc = g.main.description;
-            if(g.fees.length > 0) {
-                desc += ` <span style="font-size:11px; color:#0097e6; font-weight:bold; background:#e8f6ff; padding:2px 6px; border-radius:10px;">+${g.fees.length}筆手續費</span>`;
-            }
-            let totalNtd = parseFloat(g.main.ntdAmount) || 0;
-            g.fees.forEach(f => totalNtd += parseFloat(f.ntdAmount) || 0);
-            
-            html += `<tr>
-                <td>${g.main.txnDate}</td>
-                <td>${desc}</td>
-                ${showPerson ? `<td>${getPersonNameHTML(g.main.ownerKey)}</td>` : ''}
-                ${showTag ? `<td>${getTagHTML(g.main.tagKey)}</td>` : ''}
-                <td style="text-align: right; font-weight:bold;">$${totalNtd.toLocaleString()}</td>
-                <td style="color:#555;">${g.main.note || '-'}</td>
-            </tr>`;
-        });
-        
-        html += `</tbody></table></div></details>`;
-        return html;
-    }
+	function buildDetailHTML(titleHTML, count, amount, items, showPerson = true, showTag = true) {
+		let html = `<details class="detail-group">
+			<summary class="detail-summary">
+				<span class="detail-title">${titleHTML}</span>
+				<span class="detail-stats">${count} 筆 (已含手續費) ｜ 總計: <strong style="color:#d63031; font-size:16px;">$${amount.toLocaleString()}</strong></span>
+			</summary>
+			<div class="detail-content">
+				<table class="report-table" style="width:100%; border-collapse: collapse; margin-top: 10px;">
+					<thead>
+						<tr>
+							<th style="width: 100px;">日期</th>
+							<th>刷卡描述 (主消費)</th>
+							<th style="width: 120px;">幣別/原始金額</th>
+							${showPerson ? '<th style="width: 90px;">歸屬人</th>' : ''}
+							${showTag ? '<th style="width: 100px;">標籤</th>' : ''}
+							<th style="width: 120px; text-align: right;">真實花費(NTD)</th>
+							<th>備註</th>
+						</tr>
+					</thead>
+					<tbody>`;
+		
+		items.forEach(g => {
+			let desc = g.main.description;
+			if(g.fees.length > 0) {
+				desc += ` <span style="font-size:11px; color:#0097e6; font-weight:bold; background:#e8f6ff; padding:2px 6px; border-radius:10px;">+${g.fees.length}筆手續費</span>`;
+			}
+			
+			// 算入主花費 + 手續費的台幣總計
+			let totalNtd = parseFloat(g.main.ntdAmount) || 0;
+			g.fees.forEach(f => totalNtd += parseFloat(f.ntdAmount) || 0);
+
+			// 格式化幣別/原始金額
+			let cy = (g.main.amtCy || '').trim() || 'TWD';
+			let origAmt = parseFloat(g.main.amount);
+			let origAmtDisplay = (!isNaN(origAmt) && origAmt > 0) 
+				? `${cy} ${origAmt.toLocaleString()}` 
+				: `${cy} ${g.main.ntdAmount}`;
+			
+			html += `<tr>
+				<td>${g.main.txnDate}</td>
+				<td>${desc}</td>
+				<td style="font-family: monospace;">${origAmtDisplay}</td>
+				${showPerson ? `<td>${getPersonNameHTML(g.main.ownerKey)}</td>` : ''}
+				${showTag ? `<td>${getTagHTML(g.main.tagKey)}</td>` : ''}
+				<td style="text-align: right; font-weight:bold;">$${totalNtd.toLocaleString()}</td>
+				<td style="color:#555;">${g.main.note || '-'}</td>
+			</tr>`;
+		});
+		
+		html += `</tbody></table></div></details>`;
+		return html;
+	}
 
 
     function generateReport() {
