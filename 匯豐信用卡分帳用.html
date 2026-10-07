@@ -10,14 +10,26 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f5f6fa; color: #2f3640; }
         .container { max-width: 1250px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         h1, h2, h3 { color: #2f3640; margin-top: 0; }
-        textarea { width: 100%; height: 100px; padding: 10px; font-family: monospace; border: 1px solid #dcdde1; border-radius: 4px; resize: vertical; }
-        button { background-color: #0097e6; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; font-size: 14px; margin-top: 10px; transition: background 0.2s; font-weight: bold; }
+        textarea { width: 100%; height: 90px; padding: 10px; font-family: monospace; border: 1px solid #dcdde1; border-radius: 4px; resize: vertical; box-sizing: border-box; }
+        input[type="text"] { width: 90%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        button { background-color: #0097e6; color: white; border: none; padding: 9px 15px; cursor: pointer; border-radius: 4px; font-size: 14px; transition: background 0.2s; font-weight: bold; }
         button:hover { background-color: #00a8ff; }
         .btn-success { background-color: #44bd32; }
         .btn-success:hover { background-color: #4cd137; }
         
+        /* 來源切換頁籤 */
+        .source-tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid #e1e8ed; padding-bottom: 10px; }
+        .source-tab-btn { background: #f1f2f6; color: #57606f; border: 1px solid #dcdde1; border-radius: 6px; padding: 8px 16px; font-size: 14px; cursor: pointer; }
+        .source-tab-btn.active { background: #0097e6; color: white; border-color: #0097e6; }
+        .source-panel { display: none; background: #fafbfc; padding: 15px; border-radius: 6px; border: 1px solid #e1e8ed; margin-bottom: 15px; }
+        .source-panel.active { display: block; }
+
+        /* 月份選擇列 */
+        .month-bar { display: flex; align-items: center; justify-content: space-between; background: #e8f4fd; border: 1px solid #74b9ff; padding: 12px 18px; border-radius: 6px; margin: 15px 0; }
+        .month-select { font-size: 15px; font-weight: bold; padding: 6px 12px; border-radius: 4px; border: 1px solid #0097e6; color: #2f3640; outline: none; background: #fff; cursor: pointer; }
+
         /* 表格樣式 */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
         th, td { border: 1px solid #dcdde1; padding: 8px; text-align: left; }
         th { background-color: #f5f6fa; position: sticky; top: 0; user-select: none; }
         tr { cursor: pointer; transition: background 0.1s; }
@@ -28,7 +40,6 @@
         .sort-icon { font-size: 11px; margin-left: 4px; color: #0097e6; display: inline-block; min-width: 12px; text-align: center; }
 
         .active-group td { outline: 2px solid #0097e6; border-top: 2px solid #0097e6; border-bottom: 2px solid #0097e6; }
-        input[type="text"] { width: 90%; padding: 5px; border: 1px solid #ccc; border-radius: 3px; font-size: 13px; }
         
         /* 手續費與圖示 */
         .fee-row td { color: #555; font-size: 0.9em; border-top: none; background-color: rgba(0,0,0,0.01); }
@@ -95,22 +106,48 @@
         <summary>⚙️ 展開設定：AI 自動分類關鍵字 (人工維護區)</summary>
         <div class="settings-help">提示：請輸入商店名稱的關鍵字，多個關鍵字請用「半形逗號 (,)」或「全形逗號 (，)」隔開。</div>
         <div class="settings-grid" id="settingsGrid"></div>
-        <button class="btn-success" onclick="saveKeywords()">💾 儲存關鍵字設定</button>
+        <button class="btn-success" onclick="saveKeywords()" style="margin-top: 10px;">💾 儲存關鍵字設定</button>
         <span id="saveMsg" style="color: #44bd32; margin-left: 10px; display: none; font-weight: bold;">✔ 儲存成功！</span>
     </details>
 
-    <div id="inputArea">
-        <label for="jsonInput" style="font-weight:bold;">請貼上包含 JSON 資料的文字：</label>
-        <textarea id="jsonInput" placeholder='{"success": true, "payload": [{...}]}'></textarea><br>
-        <button onclick="loadJSON()">載入資料並進行 AI 自動分類</button>
+    <!-- 📥 資料來源選取區 -->
+    <div class="source-tabs">
+        <button class="source-tab-btn active" onclick="switchSourcePanel('sheet')">🌐 Google Sheet 雲端試算表</button>
+        <button class="source-tab-btn" onclick="switchSourcePanel('json')">📋 JSON 文字手動貼上</button>
+    </div>
+
+    <!-- 來源 1: Google Sheet (一鍵讀取) -->
+    <div id="panelSheet" class="source-panel active">
+        <div style="display:flex; align-items:center; gap: 15px;">
+            <button onclick="fetchGoogleSheet()" id="btnFetchSheet" style="font-size: 15px; padding: 10px 22px;">
+                🔄 點此同步讀取雲端試算表
+            </button>
+            <span id="sheetStatusText" style="color: #636e72; font-size: 14px; font-weight: bold;">點擊按鈕直接載入雲端帳單</span>
+        </div>
+    </div>
+
+    <!-- 來源 2: JSON (保留原始功能) -->
+    <div id="panelJson" class="source-panel">
+        <label for="jsonInput" style="font-weight:bold; display:block; margin-bottom:6px;">請貼上包含 JSON 資料的文字：</label>
+        <textarea id="jsonInput" placeholder='{"success": true, "payload": [{...}]}'></textarea>
+        <button onclick="loadJSON()" style="margin-top:10px;">載入 JSON 資料並進行 AI 自動分類</button>
     </div>
 
     <div id="workspace">
+        <!-- 📅 多月份選擇控制列 -->
+        <div id="monthBarArea" class="month-bar" style="display:none;">
+            <div style="display:flex; align-items:center; gap: 10px;">
+                <label for="monthSelect" style="font-weight: bold; font-size: 15px;">📅 選擇帳單月份：</label>
+                <select id="monthSelect" class="month-select" onchange="onMonthSelected()"></select>
+            </div>
+            <div id="monthTotalBadge" style="font-size: 15px; font-weight: bold; color: #0097e6;"></div>
+        </div>
+
         <div class="instruction">
             <strong>🎯 快捷鍵操作指南：</strong><br>
-            👤 <strong>歸屬人 (Alt + 數字)</strong>：<code>Alt+1~4</code> 指派人員，<code>Alt+0</code> 清除。<br>
-            🏷️ <strong>消費標籤 (Shift + 數字)</strong>：<code>Shift+1~7</code> 指派標籤，<code>Shift+0</code> 清除。<br>
-            💡 <strong>排序密技</strong>：點擊上方表頭 (例如「刷卡描述」)，可以將相同的消費排在一起，再用快捷鍵就能光速秒殺分類！
+            👤 <strong>歸屬人 (Alt + 數字)</strong>：<code>Alt+1~3</code> 指派人員，<code>Alt+0</code> 清除歸屬。<br>
+            🏷️ <strong>消費標籤 (Shift + 數字)</strong>：<code>Shift+1~7</code> 指派標籤，<code>Shift+0</code> 清除標籤。<br>
+            💡 <strong>使用技巧</strong>：點擊表格任意一列即可反藍選取，操作快捷鍵時會自動跳至下一筆！
         </div>
         
         <div id="legendPersonArea" class="legend-container"></div>
@@ -186,6 +223,12 @@
 
 <script>
     /** ========================================================================
+     *  ⚙️ 預設 Google Sheet 試算表網址 (請填在此處！)
+     *  💡 提示：建議使用「檔案」->「共用」->「發布到網路」選擇「CSV」格式的網址最穩定
+     ======================================================================== */
+    const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1mEP86HAW43sTLRBsSVRyJz1iB8nnGInrJy03XHKX3ZM/edit?usp=sharing";
+
+    /** ========================================================================
      *  ⚙️ 基本設定區 
      ======================================================================== */
     const PERSON_CONFIG = [
@@ -221,7 +264,11 @@
     let currentGroupIndex = -1;
     let chartsInstance = {}; 
 
-    // 全域變數：目前排序狀態
+    // 月份分組與當前選擇月份
+    let sheetDataByMonth = {};
+    let currentActiveMonth = '';
+
+    // 目前排序狀態
     let currentSortCol = 'date';
     let currentSortOrder = 'asc';
 
@@ -290,6 +337,18 @@
 
     initUI();
 
+    function switchSourcePanel(type) {
+        document.querySelectorAll('.source-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.source-panel').forEach(p => p.classList.remove('active'));
+        if (type === 'sheet') {
+            document.querySelectorAll('.source-tab-btn')[0].classList.add('active');
+            document.getElementById('panelSheet').classList.add('active');
+        } else {
+            document.querySelectorAll('.source-tab-btn')[1].classList.add('active');
+            document.getElementById('panelJson').classList.add('active');
+        }
+    }
+
     function guessTag(description) {
         if (!description) return '6';
         const normalDesc = toHalfWidth(description).toUpperCase();
@@ -305,7 +364,266 @@
     }
 
     // ==========================================
-    // 多重排序邏輯 (核心升級)
+    // CSV 解析與雲端試算表讀取
+    // ==========================================
+    function parseCSV(text) {
+        let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0;
+        for (let l of text) {
+            if ('"' === l) {
+                if (s && l === p) row[i] += l;
+                s = !s;
+            } else if (',' === l && s) l = row[++i] = '';
+            else if ('\n' === l && s) {
+                if ('\r' === p) row[i] = row[i].slice(0, -1);
+                row = ret[++r] = [l = '']; i = 0;
+            } else row[i] += l;
+            p = l;
+        }
+        return ret.filter(r => r.length > 1 || (r.length === 1 && r[0].trim() !== ''));
+    }
+
+    async function fetchGoogleSheet() {
+        const btn = document.getElementById('btnFetchSheet');
+        const statusText = document.getElementById('sheetStatusText');
+        
+        btn.innerText = '⏳ 下載解析中...';
+        btn.disabled = true;
+        statusText.innerText = '正在連線下載資料...';
+
+        let csvUrl = GOOGLE_SHEET_URL.trim();
+
+        if (!csvUrl.includes('output=csv')) {
+            const idMatch = csvUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+            if (idMatch) {
+                const sheetId = idMatch[1];
+                const gidMatch = csvUrl.match(/gid=([0-9]+)/);
+                const gid = gidMatch ? gidMatch[1] : '0';
+                csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+            }
+        }
+
+        try {
+            let resp = await fetch(csvUrl);
+
+            if (!resp.ok && !GOOGLE_SHEET_URL.includes('output=csv')) {
+                const idMatch = GOOGLE_SHEET_URL.match(/\/d\/([a-zA-Z0-9-_]+)/);
+                if (idMatch) {
+                    const fallbackUrl = `https://docs.google.com/spreadsheets/d/${idMatch[1]}/gviz/tq?tqx=out:csv`;
+                    resp = await fetch(fallbackUrl);
+                }
+            }
+
+            if (!resp.ok) throw new Error(`HTTP 錯誤碼：${resp.status}`);
+
+            const csvText = await resp.text();
+
+            if (csvText.trim().startsWith('<!DOCTYPE') || csvText.trim().startsWith('<html')) {
+                throw new Error('抓取失敗：Google 回傳了登入網頁。請確認已至「檔案」➔「共用」➔「發布到網路」選擇「CSV」！');
+            }
+
+            processSheetCSV(csvText);
+            statusText.innerText = '✔ 讀取成功！請於下方選擇月份。';
+
+        } catch (err) {
+            console.error(err);
+            statusText.innerText = '❌ 讀取失敗';
+            alert(`讀取失敗 (原因：${err.message})\n\n💡 解決方式：\n請打開該 Google Sheet，點選「檔案」➔「共用」➔「發布到網路」，將格式選為「逗號分隔值 (.csv)」發布，並把網址貼到 HTML 的 GOOGLE_SHEET_URL 變數中。`);
+        } finally {
+            btn.innerText = '🔄 重新同步雲端試算表';
+            btn.disabled = false;
+        }
+    }
+
+    function processSheetCSV(csvText) {
+        const rows = parseCSV(csvText);
+        if (rows.length < 2) {
+            alert('試算表內容為空或無法辨識！');
+            return;
+        }
+
+        sheetDataByMonth = {};
+        
+        let headerRow = rows[0].map(c => c.trim());
+        let startIndex = (headerRow[0] && headerRow[0].includes('帳單月份')) ? 1 : 0;
+
+        for (let i = startIndex; i < rows.length; i++) {
+            const cols = rows[i];
+            if (cols.length < 9) continue;
+
+            const month = cols[0] ? cols[0].trim() : '未指定月份';
+            const txnDate = (cols[1] || '').trim();
+            const cardTypeStr = (cols[2] || '').trim();
+            const cardNo = (cols[3] || '').trim();
+            const description = (cols[4] || '').trim();
+            const txnLoc = (cols[5] || '').trim();
+            const amtCy = (cols[6] || '').trim();
+            const amount = parseFloat(cols[7]) || 0;
+            const ntdAmount = parseFloat(cols[8]) || 0;
+            const ownerName = (cols[9] || '').trim();
+            const tagName = (cols[10] || '').trim();
+            const note = (cols[11] || '').trim();
+
+            if (ntdAmount <= 0) continue;
+
+            let relationShip = '';
+            if (cardTypeStr.includes('主卡')) relationShip = 'P';
+            else if (cardTypeStr.includes('附卡')) relationShip = 'S';
+
+            let ownerKey = '0';
+            const matchedP = PERSON_CONFIG.find(p => p.name === ownerName);
+            if (matchedP) ownerKey = matchedP.key;
+
+            let tagKey = '0';
+            const matchedT = TAG_CONFIG.find(t => t.name === tagName);
+            if (matchedT) tagKey = matchedT.key;
+
+            const tx = {
+                month: month,
+                txnDate: txnDate,
+                relationShip: relationShip,
+                cardNo: cardNo,
+                description: description,
+                txnLoc: txnLoc,
+                amtCy: amtCy,
+                amount: amount,
+                ntdAmount: ntdAmount,
+                ownerKey: ownerKey,
+                tagKey: tagKey,
+                note: note
+            };
+
+            if (!sheetDataByMonth[month]) sheetDataByMonth[month] = [];
+            sheetDataByMonth[month].push(tx);
+        }
+
+        const months = Object.keys(sheetDataByMonth);
+        if (months.length === 0) {
+            alert('未在試算表中找到符合條件的帳單資料！');
+            return;
+        }
+
+        months.sort((a, b) => b.localeCompare(a));
+
+        const selectEl = document.getElementById('monthSelect');
+        selectEl.innerHTML = '';
+        months.forEach(m => {
+            const list = sheetDataByMonth[m];
+            const sumNTD = list.reduce((acc, cur) => acc + cur.ntdAmount, 0);
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = `${m} (總計: $${sumNTD.toLocaleString()} NTD ｜ 共 ${list.length} 筆)`;
+            selectEl.appendChild(opt);
+        });
+
+        document.getElementById('monthBarArea').style.display = 'flex';
+        document.getElementById('keywordSettings').removeAttribute('open');
+        document.getElementById('workspace').style.display = 'block';
+
+        loadMonthData(months[0]);
+    }
+
+    function onMonthSelected() {
+        const selected = document.getElementById('monthSelect').value;
+        loadMonthData(selected);
+    }
+
+    function loadMonthData(monthKey) {
+        currentActiveMonth = monthKey;
+        const rawTransactions = sheetDataByMonth[monthKey] || [];
+        
+        let sumNTD = rawTransactions.reduce((acc, cur) => acc + cur.ntdAmount, 0);
+        document.getElementById('monthTotalBadge').innerText = `當月帳單總額：$${sumNTD.toLocaleString()} NTD`;
+
+        organizeTransactions(rawTransactions);
+
+        if (document.getElementById('reportArea').style.display === 'block') {
+            generateReport();
+        }
+    }
+
+    // ==========================================
+    // JSON 資料載入
+    // ==========================================
+    function loadJSON() {
+        try {
+            const raw = document.getElementById('jsonInput').value;
+            let parsed = JSON.parse(raw);
+            let rawTransactions = parsed.payload && Array.isArray(parsed.payload) ? parsed.payload : Array.isArray(parsed) ? parsed : null;
+            if (!rawTransactions) throw new Error("找不到陣列資料");
+
+            rawTransactions = rawTransactions.filter(tx => parseFloat(tx.ntdAmount) > 0);
+            rawTransactions.forEach(tx => {
+                tx.ownerKey = '0';
+                tx.note = '';
+                tx.tagKey = '0';
+            });
+
+            document.getElementById('monthBarArea').style.display = 'none';
+            document.getElementById('keywordSettings').removeAttribute('open'); 
+            document.getElementById('workspace').style.display = 'block';
+
+            organizeTransactions(rawTransactions);
+
+        } catch (e) { alert("資料解析錯誤：" + e.message); }
+    }
+
+    // ==========================================
+    // 整理交易群組與手續費匹配
+    // ==========================================
+    function organizeTransactions(rawTransactions) {
+        let mains = [];
+        let fees = [];
+
+        rawTransactions.forEach(tx => {
+            if (tx.description.includes('手續費') || tx.description.toUpperCase().includes('FEE')) { 
+                fees.push(tx); 
+            } else { 
+                if (!tx.tagKey || tx.tagKey === '0') {
+                    tx.tagKey = guessTag(tx.description);
+                }
+                mains.push(tx); 
+            }
+        });
+
+        txGroups = mains.map(m => ({ main: m, fees: [], isStandaloneFee: false }));
+
+        fees.forEach(fee => {
+            let feeNtd = parseFloat(fee.ntdAmount);
+            let keyword = fee.description.replace(/國外交易手續費/g, '').trim();
+            let candidates = txGroups.filter(g => g.main.txnDate === fee.txnDate);
+            let bestMatch = null;
+
+            if (candidates.length > 0) {
+                let nameMatches = candidates.filter(g => keyword && (g.main.description.includes(keyword) || keyword.includes(g.main.description.substring(0, keyword.length))));
+                let pool = nameMatches.length > 0 ? nameMatches : candidates;
+                let amountMatches = pool.filter(g => Math.abs(feeNtd - (parseFloat(g.main.ntdAmount) * 0.015)) <= 2);
+                pool = amountMatches.length > 0 ? amountMatches : pool;
+                let emptySlotMatches = pool.filter(g => g.fees.length === 0);
+                bestMatch = emptySlotMatches.length > 0 ? emptySlotMatches[0] : pool[0];
+            }
+
+            if (bestMatch) {
+                if (!fee.tagKey || fee.tagKey === '0') fee.tagKey = bestMatch.main.tagKey; 
+                if (!fee.ownerKey || fee.ownerKey === '0') fee.ownerKey = bestMatch.main.ownerKey;
+                fee.relationShip = bestMatch.main.relationShip;
+                fee.cardNo = bestMatch.main.cardNo;
+                bestMatch.fees.push(fee);
+            } else {
+                if (!fee.tagKey || fee.tagKey === '0') fee.tagKey = guessTag(fee.description); 
+                txGroups.push({ main: fee, fees: [], isStandaloneFee: true });
+            }
+        });
+
+        currentSortCol = 'date';
+        currentSortOrder = 'asc';
+        executeSorting();
+        updateHeaderUI();
+        renderTable();
+        if(txGroups.length > 0) selectGroup(0);
+    }
+
+    // ==========================================
+    // 排序與表頭邏輯
     // ==========================================
     function getSortValue(group, col) {
         const m = group.main;
@@ -314,7 +632,6 @@
             case 'card': return (m.relationShip || '') + (m.cardNo || '');
             case 'desc': return toHalfWidth(m.description || '').toUpperCase();
             case 'loc': return m.txnLoc || '';
-            // 外幣排序：先排幣別英文字，再加上補0對齊的數字
             case 'foreign': return (m.amtCy || '') + (parseFloat(m.amount) || 0).toFixed(2).padStart(15, '0');
             case 'ntd': return parseFloat(m.ntdAmount) || 0;
             case 'owner':
@@ -339,29 +656,24 @@
     }
 
     function executeSorting() {
-        // 為了確保當下選取的目標不跑掉，記錄選取物件的參照
         let selectedMain = currentGroupIndex !== -1 && txGroups[currentGroupIndex] ? txGroups[currentGroupIndex].main : null;
 
         txGroups.sort((a, b) => {
-            // 1. 第一排序準則 (使用者點選的欄位)
             let valA = getSortValue(a, currentSortCol);
             let valB = getSortValue(b, currentSortCol);
             let cmp1 = compareValues(valA, valB, currentSortOrder);
             if (cmp1 !== 0) return cmp1;
 
-            // 2. 第二排序準則 (日期 ASC)
             let dateA = a.main.txnDate || '';
             let dateB = b.main.txnDate || '';
             let cmp2 = dateA.localeCompare(dateB);
             if (cmp2 !== 0) return cmp2;
 
-            // 3. 第三排序準則 (描述 ASC)
             let descA = toHalfWidth(a.main.description || '').toUpperCase();
             let descB = toHalfWidth(b.main.description || '').toUpperCase();
             return descA.localeCompare(descB);
         });
 
-        // 重新對齊選取的索引
         if (selectedMain) {
             currentGroupIndex = txGroups.findIndex(g => g.main === selectedMain);
         }
@@ -391,73 +703,15 @@
         executeSorting();
         updateHeaderUI();
         renderTable();
-        // 將視窗捲動到當前選取的項目以確保 UX
         if (currentGroupIndex !== -1) {
             const el = document.getElementById(`group-${currentGroupIndex}-main`);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     }
 
-    function loadJSON() {
-        try {
-            const raw = document.getElementById('jsonInput').value;
-            let parsed = JSON.parse(raw);
-            let rawTransactions = parsed.payload && Array.isArray(parsed.payload) ? parsed.payload : Array.isArray(parsed) ? parsed : null;
-            if (!rawTransactions) throw new Error("找不到陣列資料");
-
-            rawTransactions = rawTransactions.filter(tx => parseFloat(tx.ntdAmount) > 0);
-
-            let mains = [];
-            let fees = [];
-            rawTransactions.forEach(tx => {
-                tx.ownerKey = '0'; tx.note = ''; tx.tagKey = '0'; 
-                if (tx.description.includes('手續費') || tx.description.toUpperCase().includes('FEE')) { fees.push(tx); } 
-                else { tx.tagKey = guessTag(tx.description); mains.push(tx); }
-            });
-
-            txGroups = mains.map(m => ({ main: m, fees: [], isStandaloneFee: false }));
-
-            fees.forEach(fee => {
-                let feeNtd = parseFloat(fee.ntdAmount);
-                let keyword = fee.description.replace(/國外交易手續費/g, '').trim();
-                let candidates = txGroups.filter(g => g.main.txnDate === fee.txnDate);
-                let bestMatch = null;
-
-                if (candidates.length > 0) {
-                    let nameMatches = candidates.filter(g => keyword && (g.main.description.includes(keyword) || keyword.includes(g.main.description.substring(0, keyword.length))));
-                    let pool = nameMatches.length > 0 ? nameMatches : candidates;
-                    let amountMatches = pool.filter(g => Math.abs(feeNtd - (parseFloat(g.main.ntdAmount) * 0.015)) <= 2);
-                    pool = amountMatches.length > 0 ? amountMatches : pool;
-                    let emptySlotMatches = pool.filter(g => g.fees.length === 0);
-                    bestMatch = emptySlotMatches.length > 0 ? emptySlotMatches[0] : pool[0];
-                }
-
-                if (bestMatch) {
-                    fee.tagKey = bestMatch.main.tagKey; 
-                    fee.relationShip = bestMatch.main.relationShip;
-                    fee.cardNo = bestMatch.main.cardNo;
-                    bestMatch.fees.push(fee);
-                } else {
-                    fee.tagKey = guessTag(fee.description); 
-                    txGroups.push({ main: fee, fees: [], isStandaloneFee: true });
-                }
-            });
-
-            // 預設第一次載入使用「日期 ASC」排序
-            currentSortCol = 'date';
-            currentSortOrder = 'asc';
-            executeSorting();
-            updateHeaderUI();
-
-            document.getElementById('keywordSettings').removeAttribute('open'); 
-            document.getElementById('inputArea').style.display = 'none';
-            document.getElementById('workspace').style.display = 'block';
-            renderTable();
-            if(txGroups.length > 0) selectGroup(0);
-
-        } catch (e) { alert("資料解析錯誤：" + e.message); }
-    }
-
+    // ==========================================
+    // 畫面表格渲染
+    // ==========================================
     function renderTable() {
         const tbody = document.getElementById('txBody');
         tbody.innerHTML = '';
@@ -487,13 +741,13 @@
             <td>${tx.txnDate}</td>
             <td>${cardHTML}</td>
             <td>${descHTML}</td>
-            <td>${tx.txnLoc.trim() || '-'}</td>
-            <td>${tx.amtCy.trim() || 'TWD'} ${tx.amount > 0 ? tx.amount : ''}</td>
+            <td>${(tx.txnLoc || '').trim() || '-'}</td>
+            <td>${(tx.amtCy || '').trim() || 'TWD'} ${tx.amount > 0 ? tx.amount : ''}</td>
             <td style="font-weight:bold; text-align:right;">${tx.ntdAmount}</td>
             <td class="owner-display-${gIndex}">${getPersonNameHTML(tx.ownerKey)}</td>
             <td class="tag-display-${gIndex}">${getTagHTML(tx.tagKey)}</td>
             <td>
-                <input type="text" value="${tx.note}" placeholder="${type === 'main' ? '備註...' : ''}" 
+                <input type="text" value="${tx.note || ''}" placeholder="${type === 'main' ? '備註...' : ''}" 
                        onchange="updateNote(${gIndex}, '${type}', ${fIndex}, this.value)"
                        onclick="event.stopPropagation(); selectGroup(${gIndex});">
             </td>
@@ -516,12 +770,13 @@
         currentGroupIndex = gIndex;
         const rows = document.querySelectorAll(`.group-row-${gIndex}`);
         rows.forEach(r => r.classList.add('active-group'));
-        // 這裡避免多次捲動造成閃爍，所以交由 handleSort 控制或只做 nearest 捲動
     }
 
     function assignPerson(key) {
+        if (currentGroupIndex === -1 && txGroups.length > 0) selectGroup(0);
         if (currentGroupIndex === -1) return;
         if (key !== '0' && !PERSON_CONFIG.find(p => p.key === key)) return;
+        
         const group = txGroups[currentGroupIndex];
         group.main.ownerKey = key; group.fees.forEach(fee => fee.ownerKey = key);
         
@@ -532,30 +787,54 @@
         
         if (currentGroupIndex < txGroups.length - 1) {
             selectGroup(currentGroupIndex + 1);
-            // 當使用鍵盤快捷鍵快速下移時，確保畫面跟隨
             const el = document.getElementById(`group-${currentGroupIndex}-main`);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     }
 
     function assignTag(key) {
+        if (currentGroupIndex === -1 && txGroups.length > 0) selectGroup(0);
         if (currentGroupIndex === -1) return;
         if (key !== '0' && !TAG_CONFIG.find(t => t.key === key)) return;
+        
         const group = txGroups[currentGroupIndex];
         group.main.tagKey = key; group.fees.forEach(fee => fee.tagKey = key);
         document.querySelectorAll(`.tag-display-${currentGroupIndex}`).forEach(td => td.innerHTML = getTagHTML(key));
     }
 
+    // ==========================================
+    // 精準快捷鍵監聽器 (修復 Shift 產生符號問題)
+    // ==========================================
     document.addEventListener('keydown', (e) => {
-        if (e.target.tagName.toLowerCase() === 'input') return;
-        let numKey = e.key;
-        if (e.code && (e.code.startsWith('Digit') || e.code.startsWith('Numpad'))) { numKey = e.code.replace('Digit', '').replace('Numpad', ''); }
-        if (e.altKey) { e.preventDefault(); assignPerson(numKey); } 
-        else if (e.shiftKey) { e.preventDefault(); assignTag(numKey); }
+        // 如果正在輸入備註，不觸發快捷鍵
+        if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'textarea') return;
+
+        let numKey = '';
+
+        // 優先讀取 e.code，徹底避免 Shift 把 1 變成 !
+        if (e.code && e.code.startsWith('Digit')) {
+            numKey = e.code.replace('Digit', '');
+        } else if (e.code && e.code.startsWith('Numpad')) {
+            numKey = e.code.replace('Numpad', '');
+        } else {
+            const shiftMap = { '!': '1', '@': '2', '#': '3', '$': '4', '%': '5', '^': '6', '&': '7', '*': '8', '(': '9', ')': '0' };
+            numKey = shiftMap[e.key] || e.key;
+        }
+
+        // Alt + 數字 (人員)
+        if (e.altKey && !e.shiftKey && !e.ctrlKey) {
+            e.preventDefault();
+            assignPerson(numKey);
+        } 
+        // Shift + 數字 (標籤)
+        else if (e.shiftKey && !e.altKey && !e.ctrlKey) {
+            e.preventDefault();
+            assignTag(numKey);
+        }
     });
 
     // ==========================================
-    // 分頁切換功能 (Tabs)
+    // 報表與分頁計算
     // ==========================================
     function switchTab(tabId) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -564,59 +843,56 @@
         document.getElementById(tabId).classList.add('active');
     }
 
-	function buildDetailHTML(titleHTML, count, amount, items, showPerson = true, showTag = true) {
-		let html = `<details class="detail-group">
-			<summary class="detail-summary">
-				<span class="detail-title">${titleHTML}</span>
-				<span class="detail-stats">${count} 筆 (已含手續費) ｜ 總計: <strong style="color:#d63031; font-size:16px;">$${amount.toLocaleString()}</strong></span>
-			</summary>
-			<div class="detail-content">
-				<table class="report-table" style="width:100%; border-collapse: collapse; margin-top: 10px;">
-					<thead>
-						<tr>
-							<th style="width: 100px;">日期</th>
-							<th>刷卡描述 (主消費)</th>
-							<th style="width: 120px;">幣別/原始金額</th>
-							${showPerson ? '<th style="width: 90px;">歸屬人</th>' : ''}
-							${showTag ? '<th style="width: 100px;">標籤</th>' : ''}
-							<th style="width: 120px; text-align: right;">真實花費(NTD)</th>
-							<th>備註</th>
-						</tr>
-					</thead>
-					<tbody>`;
-		
-		items.forEach(g => {
-			let desc = g.main.description;
-			if(g.fees.length > 0) {
-				desc += ` <span style="font-size:11px; color:#0097e6; font-weight:bold; background:#e8f6ff; padding:2px 6px; border-radius:10px;">+${g.fees.length}筆手續費</span>`;
-			}
-			
-			// 算入主花費 + 手續費的台幣總計
-			let totalNtd = parseFloat(g.main.ntdAmount) || 0;
-			g.fees.forEach(f => totalNtd += parseFloat(f.ntdAmount) || 0);
+    function buildDetailHTML(titleHTML, count, amount, items, showPerson = true, showTag = true) {
+        let html = `<details class="detail-group">
+            <summary class="detail-summary">
+                <span class="detail-title">${titleHTML}</span>
+                <span class="detail-stats">${count} 筆 (含手續費) ｜ 總計: <strong style="color:#d63031; font-size:16px;">$${amount.toLocaleString()}</strong></span>
+            </summary>
+            <div class="detail-content">
+                <table class="report-table" style="width:100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">日期</th>
+                            <th>刷卡描述 (主消費)</th>
+                            <th style="width: 120px;">幣別/原始金額</th>
+                            ${showPerson ? '<th style="width: 90px;">歸屬人</th>' : ''}
+                            ${showTag ? '<th style="width: 100px;">標籤</th>' : ''}
+                            <th style="width: 120px; text-align: right;">真實花費(NTD)</th>
+                            <th>備註</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+        
+        items.forEach(g => {
+            let desc = g.main.description;
+            if(g.fees.length > 0) {
+                desc += ` <span style="font-size:11px; color:#0097e6; font-weight:bold; background:#e8f6ff; padding:2px 6px; border-radius:10px;">+${g.fees.length}筆手續費</span>`;
+            }
+            
+            let totalNtd = parseFloat(g.main.ntdAmount) || 0;
+            g.fees.forEach(f => totalNtd += parseFloat(f.ntdAmount) || 0);
 
-			// 格式化幣別/原始金額
-			let cy = (g.main.amtCy || '').trim() || 'TWD';
-			let origAmt = parseFloat(g.main.amount);
-			let origAmtDisplay = (!isNaN(origAmt) && origAmt > 0) 
-				? `${cy} ${origAmt.toLocaleString()}` 
-				: `${cy} ${g.main.ntdAmount}`;
-			
-			html += `<tr>
-				<td>${g.main.txnDate}</td>
-				<td>${desc}</td>
-				<td style="font-family: monospace;">${origAmtDisplay}</td>
-				${showPerson ? `<td>${getPersonNameHTML(g.main.ownerKey)}</td>` : ''}
-				${showTag ? `<td>${getTagHTML(g.main.tagKey)}</td>` : ''}
-				<td style="text-align: right; font-weight:bold;">$${totalNtd.toLocaleString()}</td>
-				<td style="color:#555;">${g.main.note || '-'}</td>
-			</tr>`;
-		});
-		
-		html += `</tbody></table></div></details>`;
-		return html;
-	}
-
+            let cy = (g.main.amtCy || '').trim() || 'TWD';
+            let origAmt = parseFloat(g.main.amount);
+            let origAmtDisplay = (!isNaN(origAmt) && origAmt > 0) 
+                ? `${cy} ${origAmt.toLocaleString()}` 
+                : `${cy} ${g.main.ntdAmount}`;
+            
+            html += `<tr>
+                <td>${g.main.txnDate}</td>
+                <td>${desc}</td>
+                <td style="font-family: monospace;">${origAmtDisplay}</td>
+                ${showPerson ? `<td>${getPersonNameHTML(g.main.ownerKey)}</td>` : ''}
+                ${showTag ? `<td>${getTagHTML(g.main.tagKey)}</td>` : ''}
+                <td style="text-align: right; font-weight:bold;">$${totalNtd.toLocaleString()}</td>
+                <td style="color:#555;">${g.main.note || '-'}</td>
+            </tr>`;
+        });
+        
+        html += `</tbody></table></div></details>`;
+        return html;
+    }
 
     function generateReport() {
         const reportArea = document.getElementById('reportArea');
@@ -633,8 +909,8 @@
         txGroups.forEach(group => {
             let owner = group.main.ownerKey;
             let tag = group.main.tagKey;
-            let loc = group.main.txnLoc.trim() || 'TW/Online';
-            let cy = group.main.amtCy.trim() || 'TWD';
+            let loc = (group.main.txnLoc || '').trim() || 'TW/Online';
+            let cy = (group.main.amtCy || '').trim() || 'TWD';
 
             dataPerson[owner].count += 1; dataPerson[owner].items.push(group);
             dataTag[tag].count += 1; dataTag[tag].items.push(group);
@@ -732,7 +1008,9 @@
     }
 
     function downloadCSV() {
-        let csvContent = "\uFEFF消費日期,卡別,卡號,刷卡描述,國家,幣別,外幣金額,台幣金額,歸屬人,分類標籤,備註\n";
+        let monthHeader = currentActiveMonth ? currentActiveMonth : '當期';
+        let csvContent = "\uFEFF帳單月份,消費日期,卡別,卡號,刷卡描述,國家,幣別,外幣金額,台幣金額,歸屬人,分類標籤,備註\n";
+        
         const addRow = (tx) => {
             const p = PERSON_CONFIG.find(p => p.key === tx.ownerKey);
             const ownerName = tx.ownerKey === '0' ? '未分類' : (p ? p.name : '未知');
@@ -742,12 +1020,15 @@
             if (tx.relationShip === 'P') cardType = '主卡'; else if (tx.relationShip === 'S') cardType = '附卡';
             const safeDesc = `"${(tx.description || '').replace(/"/g, '""')}"`;
             const safeNote = `"${(tx.note || '').replace(/"/g, '""')}"`;
-            csvContent += `${tx.txnDate},${cardType},${tx.cardNo || ''},${safeDesc},${tx.txnLoc.trim()},${tx.amtCy.trim() || 'TWD'},${tx.amount},${tx.ntdAmount},${ownerName},${tagName},${safeNote}\n`;
+            const cy = (tx.amtCy || '').trim() || 'TWD';
+            const loc = (tx.txnLoc || '').trim();
+            csvContent += `${monthHeader},${tx.txnDate},${cardType},${tx.cardNo || ''},${safeDesc},${loc},${cy},${tx.amount},${tx.ntdAmount},${ownerName},${tagName},${safeNote}\n`;
         };
         txGroups.forEach(group => { addRow(group.main); group.fees.forEach(addRow); });
+        
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
-        link.download = "credit_card_dashboard_report.csv"; link.style.visibility = 'hidden';
+        link.download = `credit_card_report_${monthHeader}.csv`; link.style.visibility = 'hidden';
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 </script>
