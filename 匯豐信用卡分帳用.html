@@ -48,6 +48,9 @@
         /* 標籤小藥丸 (Badge) */
         .tag-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.3); }
         
+        /* 退款小徽章 */
+        .refund-badge { display: inline-block; background-color: #e8f8f5; color: #27ae60; border: 1px solid #a3e4d7; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 5px; }
+
         /* 主卡/附卡標籤 */
         .card-badge { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; }
         .card-p { background: #dfe6e9; color: #2d3436; border: 1px solid #b2bec3; } 
@@ -147,7 +150,7 @@
             <strong>🎯 快捷鍵操作指南：</strong><br>
             👤 <strong>歸屬人 (Alt + 數字)</strong>：<code>Alt+1~3</code> 指派人員，<code>Alt+0</code> 清除歸屬。<br>
             🏷️ <strong>消費標籤 (Shift + 數字)</strong>：<code>Shift+1~7</code> 指派標籤，<code>Shift+0</code> 清除標籤。<br>
-            💡 <strong>使用技巧</strong>：點擊表格任意一列即可反藍選取，操作快捷鍵時會自動跳至下一筆！
+            💡 <strong>使用技巧</strong>：點擊表格任意一列即可反藍選取，操作快捷鍵時會自動跳至下一筆！退款項目以綠色標記並自動計入折扣。
         </div>
         
         <div id="legendPersonArea" class="legend-container"></div>
@@ -187,11 +190,11 @@
         <!-- 視覺化圖表區 -->
         <div class="charts-grid">
             <div class="chart-card">
-                <h4 style="text-align: center; margin-top: 0;">👤 應付總額</h4>
+                <h4 style="text-align: center; margin-top: 0;">👤 應付總額 (含退款抵扣)</h4>
                 <div class="chart-container"><canvas id="personChart"></canvas></div>
             </div>
             <div class="chart-card">
-                <h4 style="text-align: center; margin-top: 0;">🏷️ 消費類別</h4>
+                <h4 style="text-align: center; margin-top: 0;">🏷️ 消費類別淨額</h4>
                 <div class="chart-container"><canvas id="tagChart"></canvas></div>
             </div>
             <div class="chart-card">
@@ -224,7 +227,6 @@
 <script>
     /** ========================================================================
      *  ⚙️ 預設 Google Sheet 試算表網址 (請填在此處！)
-     *  💡 提示：建議使用「檔案」->「共用」->「發布到網路」選擇「CSV」格式的網址最穩定
      ======================================================================== */
     const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1mEP86HAW43sTLRBsSVRyJz1iB8nnGInrJy03XHKX3ZM/edit?usp=sharing";
 
@@ -277,6 +279,22 @@
         return str.replace(/[\uff01-\uff5e]/g, function(ch) {
             return String.fromCharCode(ch.charCodeAt(0) - 0xfee0);
         }).replace(/\u3000/g, ' ');
+    }
+
+    // 解析金額輔助函數：支援負數、會計括號格式 (100) 與千分位
+    function parseAmount(val) {
+        if (typeof val === 'number') return val;
+        if (!val) return 0;
+        let str = String(val).trim();
+        if (/^\(.*\)$/.test(str)) {
+            str = '-' + str.slice(1, -1);
+        }
+        if (str.endsWith('-')) {
+            str = '-' + str.slice(0, -1);
+        }
+        str = str.replace(/[^\d.-]/g, '');
+        let num = parseFloat(str);
+        return isNaN(num) ? 0 : num;
     }
 
     function initUI() {
@@ -457,13 +475,14 @@
             const description = (cols[4] || '').trim();
             const txnLoc = (cols[5] || '').trim();
             const amtCy = (cols[6] || '').trim();
-            const amount = parseFloat(cols[7]) || 0;
-            const ntdAmount = parseFloat(cols[8]) || 0;
+            const amount = parseAmount(cols[7]);
+            const ntdAmount = parseAmount(cols[8]);
             const ownerName = (cols[9] || '').trim();
             const tagName = (cols[10] || '').trim();
             const note = (cols[11] || '').trim();
 
-            if (ntdAmount <= 0) continue;
+            // 支援負數：只要不是 0 且有效金額就保留
+            if (ntdAmount === 0 || isNaN(ntdAmount)) continue;
 
             let relationShip = '';
             if (cardTypeStr.includes('主卡')) relationShip = 'P';
@@ -511,7 +530,7 @@
             const sumNTD = list.reduce((acc, cur) => acc + cur.ntdAmount, 0);
             const opt = document.createElement('option');
             opt.value = m;
-            opt.textContent = `${m} (總計: $${sumNTD.toLocaleString()} NTD ｜ 共 ${list.length} 筆)`;
+            opt.textContent = `${m} (結算淨額: $${sumNTD.toLocaleString()} NTD ｜ 共 ${list.length} 筆)`;
             selectEl.appendChild(opt);
         });
 
@@ -532,7 +551,7 @@
         const rawTransactions = sheetDataByMonth[monthKey] || [];
         
         let sumNTD = rawTransactions.reduce((acc, cur) => acc + cur.ntdAmount, 0);
-        document.getElementById('monthTotalBadge').innerText = `當月帳單總額：$${sumNTD.toLocaleString()} NTD`;
+        document.getElementById('monthTotalBadge').innerText = `當月結算總額：$${sumNTD.toLocaleString()} NTD`;
 
         organizeTransactions(rawTransactions);
 
@@ -551,7 +570,13 @@
             let rawTransactions = parsed.payload && Array.isArray(parsed.payload) ? parsed.payload : Array.isArray(parsed) ? parsed : null;
             if (!rawTransactions) throw new Error("找不到陣列資料");
 
-            rawTransactions = rawTransactions.filter(tx => parseFloat(tx.ntdAmount) > 0);
+            // 支援負數
+            rawTransactions = rawTransactions.filter(tx => {
+                tx.amount = parseAmount(tx.amount);
+                tx.ntdAmount = parseAmount(tx.ntdAmount);
+                return tx.ntdAmount !== 0;
+            });
+
             rawTransactions.forEach(tx => {
                 tx.ownerKey = '0';
                 tx.note = '';
@@ -568,7 +593,7 @@
     }
 
     // ==========================================
-    // 整理交易群組與手續費匹配
+    // 整理交易群組與手續費匹配 (含負數退款手續費智慧配對)
     // ==========================================
     function organizeTransactions(rawTransactions) {
         let mains = [];
@@ -589,14 +614,31 @@
 
         fees.forEach(fee => {
             let feeNtd = parseFloat(fee.ntdAmount);
-            let keyword = fee.description.replace(/國外交易手續費/g, '').trim();
-            let candidates = txGroups.filter(g => g.main.txnDate === fee.txnDate);
+            let keyword = fee.description.replace(/(國外交易手續費|手續費|退款|退回|折抵|退)/g, '').trim();
+            
+            // 優先找同日期、且正負號一致的主消費（退款手續費匹配退款主消費）
+            let candidates = txGroups.filter(g => {
+                if (g.main.txnDate !== fee.txnDate) return false;
+                let mainNtd = parseFloat(g.main.ntdAmount) || 0;
+                return (feeNtd < 0 && mainNtd < 0) || (feeNtd >= 0 && mainNtd >= 0);
+            });
+
+            // 若找不到同符號的，才放寬至該日所有候選
+            if (candidates.length === 0) {
+                candidates = txGroups.filter(g => g.main.txnDate === fee.txnDate);
+            }
+
             let bestMatch = null;
 
             if (candidates.length > 0) {
                 let nameMatches = candidates.filter(g => keyword && (g.main.description.includes(keyword) || keyword.includes(g.main.description.substring(0, keyword.length))));
                 let pool = nameMatches.length > 0 ? nameMatches : candidates;
-                let amountMatches = pool.filter(g => Math.abs(feeNtd - (parseFloat(g.main.ntdAmount) * 0.015)) <= 2);
+                
+                // 1.5% 金額相近比對 (取絕對值算比例)
+                let amountMatches = pool.filter(g => {
+                    let mainNtd = parseFloat(g.main.ntdAmount) || 0;
+                    return Math.abs(Math.abs(feeNtd) - (Math.abs(mainNtd) * 0.015)) <= 2;
+                });
                 pool = amountMatches.length > 0 ? amountMatches : pool;
                 let emptySlotMatches = pool.filter(g => g.fees.length === 0);
                 bestMatch = emptySlotMatches.length > 0 ? emptySlotMatches[0] : pool[0];
@@ -632,8 +674,8 @@
             case 'card': return (m.relationShip || '') + (m.cardNo || '');
             case 'desc': return toHalfWidth(m.description || '').toUpperCase();
             case 'loc': return m.txnLoc || '';
-            case 'foreign': return (m.amtCy || '') + (parseFloat(m.amount) || 0).toFixed(2).padStart(15, '0');
-            case 'ntd': return parseFloat(m.ntdAmount) || 0;
+            case 'foreign': return parseAmount(m.amount);
+            case 'ntd': return parseAmount(m.ntdAmount);
             case 'owner':
                 const p = PERSON_CONFIG.find(x => x.key === m.ownerKey);
                 return p ? p.name : '未分類';
@@ -730,20 +772,31 @@
         tr.onclick = () => selectGroup(gIndex);
 
         const isStandalone = type === 'main' && txGroups[gIndex].isStandaloneFee;
-        const descHTML = (type === 'fee' || isStandalone) ? `<div class="fee-icon"></div> ${tx.description}` : tx.description;
+        const isNegative = (parseFloat(tx.ntdAmount) || 0) < 0;
+        
+        let refundTag = (isNegative && type === 'main' && !isStandalone) ? `<span class="refund-badge">退款</span>` : '';
+        let descHTML = (type === 'fee' || isStandalone) 
+            ? `<div class="fee-icon"></div> ${isNegative ? '<span class="refund-badge">退手續費</span>' : ''}${tx.description}` 
+            : `${refundTag}${tx.description}`;
         
         let cardHTML = '<span style="color:#aaa;">-</span>';
         if (tx.relationShip === 'P') cardHTML = `<span class="card-badge card-p">主卡 *${tx.cardNo}</span>`;
         else if (tx.relationShip === 'S') cardHTML = `<span class="card-badge card-s">附卡 *${tx.cardNo}</span>`;
         else if (tx.cardNo) cardHTML = `<span class="card-badge" style="background:#ddd;">*${tx.cardNo}</span>`;
 
+        // 支援負數外幣與台幣金額顏色渲染
+        let origAmtDisplay = (tx.amount !== 0 && !isNaN(tx.amount)) ? tx.amount.toLocaleString() : '';
+        let ntdAmountDisplay = isNegative 
+            ? `<span style="color: #27ae60; font-weight: bold;">${tx.ntdAmount.toLocaleString()}</span>` 
+            : `${tx.ntdAmount.toLocaleString()}`;
+
         tr.innerHTML = `
             <td>${tx.txnDate}</td>
             <td>${cardHTML}</td>
             <td>${descHTML}</td>
             <td>${(tx.txnLoc || '').trim() || '-'}</td>
-            <td>${(tx.amtCy || '').trim() || 'TWD'} ${tx.amount > 0 ? tx.amount : ''}</td>
-            <td style="font-weight:bold; text-align:right;">${tx.ntdAmount}</td>
+            <td>${(tx.amtCy || '').trim() || 'TWD'} ${origAmtDisplay}</td>
+            <td style="font-weight:bold; text-align:right;">${ntdAmountDisplay}</td>
             <td class="owner-display-${gIndex}">${getPersonNameHTML(tx.ownerKey)}</td>
             <td class="tag-display-${gIndex}">${getTagHTML(tx.tagKey)}</td>
             <td>
@@ -803,15 +856,12 @@
     }
 
     // ==========================================
-    // 精準快捷鍵監聽器 (修復 Shift 產生符號問題)
+    // 精準快捷鍵監聽器
     // ==========================================
     document.addEventListener('keydown', (e) => {
-        // 如果正在輸入備註，不觸發快捷鍵
         if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'textarea') return;
 
         let numKey = '';
-
-        // 優先讀取 e.code，徹底避免 Shift 把 1 變成 !
         if (e.code && e.code.startsWith('Digit')) {
             numKey = e.code.replace('Digit', '');
         } else if (e.code && e.code.startsWith('Numpad')) {
@@ -821,20 +871,17 @@
             numKey = shiftMap[e.key] || e.key;
         }
 
-        // Alt + 數字 (人員)
         if (e.altKey && !e.shiftKey && !e.ctrlKey) {
             e.preventDefault();
             assignPerson(numKey);
-        } 
-        // Shift + 數字 (標籤)
-        else if (e.shiftKey && !e.altKey && !e.ctrlKey) {
+        } else if (e.shiftKey && !e.altKey && !e.ctrlKey) {
             e.preventDefault();
             assignTag(numKey);
         }
     });
 
     // ==========================================
-    // 報表與分頁計算
+    // 報表與分頁計算 (支援負數退款抵扣)
     // ==========================================
     function switchTab(tabId) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -844,10 +891,11 @@
     }
 
     function buildDetailHTML(titleHTML, count, amount, items, showPerson = true, showTag = true) {
+        let amtColor = amount < 0 ? '#27ae60' : '#d63031';
         let html = `<details class="detail-group">
             <summary class="detail-summary">
                 <span class="detail-title">${titleHTML}</span>
-                <span class="detail-stats">${count} 筆 (含手續費) ｜ 總計: <strong style="color:#d63031; font-size:16px;">$${amount.toLocaleString()}</strong></span>
+                <span class="detail-stats">${count} 筆 (含手續費) ｜ 淨額: <strong style="color:${amtColor}; font-size:16px;">$${amount.toLocaleString()}</strong></span>
             </summary>
             <div class="detail-content">
                 <table class="report-table" style="width:100%; border-collapse: collapse; margin-top: 10px;">
@@ -865,7 +913,8 @@
                     <tbody>`;
         
         items.forEach(g => {
-            let desc = g.main.description;
+            let isRefund = parseFloat(g.main.ntdAmount) < 0;
+            let desc = (isRefund ? `<span class="refund-badge">退款</span>` : '') + g.main.description;
             if(g.fees.length > 0) {
                 desc += ` <span style="font-size:11px; color:#0097e6; font-weight:bold; background:#e8f6ff; padding:2px 6px; border-radius:10px;">+${g.fees.length}筆手續費</span>`;
             }
@@ -874,18 +923,20 @@
             g.fees.forEach(f => totalNtd += parseFloat(f.ntdAmount) || 0);
 
             let cy = (g.main.amtCy || '').trim() || 'TWD';
-            let origAmt = parseFloat(g.main.amount);
-            let origAmtDisplay = (!isNaN(origAmt) && origAmt > 0) 
+            let origAmt = parseAmount(g.main.amount);
+            let origAmtDisplay = (!isNaN(origAmt) && origAmt !== 0) 
                 ? `${cy} ${origAmt.toLocaleString()}` 
-                : `${cy} ${g.main.ntdAmount}`;
+                : `${cy} ${g.main.ntdAmount.toLocaleString()}`;
             
+            let totalColor = totalNtd < 0 ? '#27ae60' : '#2f3640';
+
             html += `<tr>
                 <td>${g.main.txnDate}</td>
                 <td>${desc}</td>
                 <td style="font-family: monospace;">${origAmtDisplay}</td>
                 ${showPerson ? `<td>${getPersonNameHTML(g.main.ownerKey)}</td>` : ''}
                 ${showTag ? `<td>${getTagHTML(g.main.tagKey)}</td>` : ''}
-                <td style="text-align: right; font-weight:bold;">$${totalNtd.toLocaleString()}</td>
+                <td style="text-align: right; font-weight:bold; color: ${totalColor};">$${totalNtd.toLocaleString()}</td>
                 <td style="color:#555;">${g.main.note || '-'}</td>
             </tr>`;
         });
@@ -933,7 +984,7 @@
             group.fees.forEach(addAmount);
         });
 
-        document.getElementById('reportContent').innerHTML = `應繳總額：<span style="color:#e84118;">$${grandTotal.toLocaleString()}</span> NTD`;
+        document.getElementById('reportContent').innerHTML = `應繳總額(扣除退款)：<span style="color:${grandTotal < 0 ? '#27ae60' : '#e84118'};">$${grandTotal.toLocaleString()}</span> NTD`;
 
         let htmlPerson = '';
         PERSON_CONFIG.forEach(p => {
@@ -970,6 +1021,12 @@
                 data: { labels: labels, datasets: [{ data: data, counts: counts, backgroundColor: bgColors, borderWidth: 1 }] },
                 options: {
                     responsive: true, maintainAspectRatio: false,
+                    scales: type === 'bar' ? {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: function(val) { return '$' + val.toLocaleString(); } }
+                        }
+                    } : {},
                     plugins: { 
                         legend: { position: type === 'pie' || type === 'doughnut' ? 'right' : 'none', labels: { boxWidth: 12, padding: 10 } },
                         tooltip: { callbacks: { label: function(c) { return ` $${c.raw.toLocaleString()} NTD (${c.dataset.counts[c.dataIndex]} 筆)`; } } }
@@ -978,6 +1035,7 @@
             });
         }
 
+        // 長條圖 (支援正負數柱狀)
         let pLabels = [], pData = [], pCounts = [], pColors = [];
         PERSON_CONFIG.forEach(p => { 
             if(dataPerson[p.key].count > 0) { pLabels.push(p.name); pData.push(dataPerson[p.key].amount); pCounts.push(dataPerson[p.key].count); pColors.push(p.color); }
@@ -985,20 +1043,21 @@
         if(dataPerson['0'].count > 0) { pLabels.push('未分類'); pData.push(dataPerson['0'].amount); pCounts.push(dataPerson['0'].count); pColors.push('#ddd'); }
         chartsInstance['person'] = createChart('personChart', 'bar', pLabels, pData, pCounts, pColors);
 
+        // 圓餅/環形圖：過濾掉淨額 <= 0 的類別以防 Chart.js 異常，並正確顯示消費比例
         let tLabels = [], tData = [], tCounts = [], tColors = [];
         TAG_CONFIG.forEach(t => { 
-            if(dataTag[t.key].count > 0) { tLabels.push(t.name); tData.push(dataTag[t.key].amount); tCounts.push(dataTag[t.key].count); tColors.push(t.color); }
+            if(dataTag[t.key].count > 0 && dataTag[t.key].amount > 0) { tLabels.push(t.name); tData.push(dataTag[t.key].amount); tCounts.push(dataTag[t.key].count); tColors.push(t.color); }
         });
-        if(dataTag['0'].count > 0) { tLabels.push('未分類'); tData.push(dataTag['0'].amount); tCounts.push(dataTag['0'].count); tColors.push('#ddd'); }
+        if(dataTag['0'].count > 0 && dataTag['0'].amount > 0) { tLabels.push('未分類'); tData.push(dataTag['0'].amount); tCounts.push(dataTag['0'].count); tColors.push('#ddd'); }
         chartsInstance['tag'] = createChart('tagChart', 'doughnut', tLabels, tData, tCounts, tColors);
 
-        let cLabels = Object.keys(dataCountry).sort((a,b) => dataCountry[b].amount - dataCountry[a].amount);
+        let cLabels = Object.keys(dataCountry).filter(k => dataCountry[k].amount > 0).sort((a,b) => dataCountry[b].amount - dataCountry[a].amount);
         let cData = cLabels.map(k => dataCountry[k].amount);
         let cCounts = cLabels.map(k => dataCountry[k].count);
         let cColors = cLabels.map((_, i) => `hsl(${i * 60 + 20}, 70%, 65%)`);
         chartsInstance['country'] = createChart('countryChart', 'pie', cLabels, cData, cCounts, cColors);
 
-        let cyLabels = Object.keys(dataCurrency).sort((a,b) => dataCurrency[b].amount - dataCurrency[a].amount);
+        let cyLabels = Object.keys(dataCurrency).filter(k => dataCurrency[k].amount > 0).sort((a,b) => dataCurrency[b].amount - dataCurrency[a].amount);
         let cyData = cyLabels.map(k => dataCurrency[k].amount);
         let cyCounts = cyLabels.map(k => dataCurrency[k].count);
         let cyColors = cyLabels.map((_, i) => `hsl(${i * 80 + 200}, 70%, 65%)`);
