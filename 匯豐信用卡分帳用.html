@@ -297,6 +297,20 @@
         return isNaN(num) ? 0 : num;
     }
 
+    function parseDate(str) {
+        if (!str) return 0;
+        let parts = String(str).trim().split(/[\/\-\.]/);
+        if (parts.length === 3) {
+            let y = parseInt(parts[0], 10);
+            if (y < 1900) y += 1911; // 支援民國年
+            let m = String(parts[1]).padStart(2, '0');
+            let d = String(parts[2]).padStart(2, '0');
+            return new Date(`${y}-${m}-${d}`).getTime() || 0;
+        }
+        let t = Date.parse(str);
+        return isNaN(t) ? 0 : t;
+    }
+
     function initUI() {
         let styleHTML = '';
         let personLegend = '<div class="legend-title">👥 人員快捷鍵 (Alt + 數字)</div>';
@@ -670,7 +684,7 @@
     function getSortValue(group, col) {
         const m = group.main;
         switch(col) {
-            case 'date': return m.txnDate || '';
+            case 'date': return parseDate(m.txnDate);
             case 'card': return (m.relationShip || '') + (m.cardNo || '');
             case 'desc': return toHalfWidth(m.description || '').toUpperCase();
             case 'loc': return m.txnLoc || '';
@@ -706,9 +720,9 @@
             let cmp1 = compareValues(valA, valB, currentSortOrder);
             if (cmp1 !== 0) return cmp1;
 
-            let dateA = a.main.txnDate || '';
-            let dateB = b.main.txnDate || '';
-            let cmp2 = dateA.localeCompare(dateB);
+            let dateA = parseDate(a.main.txnDate);
+            let dateB = parseDate(b.main.txnDate);
+            let cmp2 = dateA - dateB;
             if (cmp2 !== 0) return cmp2;
 
             let descA = toHalfWidth(a.main.description || '').toUpperCase();
