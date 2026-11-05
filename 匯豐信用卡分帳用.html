@@ -252,10 +252,10 @@
     const DEFAULT_KEYWORDS = {
         '1': 'MCDONALDS, COLES, Food, Cafe, Dining, CATERING, ROMEOS, Coffee, Gelatissimo, 餐飲, 餐廳, 超市',
         '2': 'ZOO, LunaPark, SEALIFE, Wildlife, MAGICMEMORIES, 票, 展覽',
-        '3': 'HOTEL, RESORT, 住宿, 飯店, 旅館',
-        '4': 'OPAL, METRO, TRANSPORT, AIR, UBER, 機票, 交通, 台鐵, 高鐵, 客運',
+        '3': 'HOTEL, RESORT, COMFORTINN, 住宿, 飯店, 旅館',
+        '4': 'ATMOSREWARD, OPAL, METRO, TRANSPORT, AIR, UBER, 機票, 交通, 台鐵, 高鐵, 客運, 機場接送',
         '5': 'CHEMIST, taobao, WHSMITH, GIFT, 百貨, 購物, 藥妝',
-        '7': 'JUMP, POCHIMART, PONYCANYON, ',
+        '7': 'EXHIBIT, AMAZON.CO.JP, UFOTABLE, JUMP, POCHIMART, PONYCANYON, ',
         '6': '' 
     };
 
@@ -384,15 +384,28 @@
     function guessTag(description) {
         if (!description) return '6';
         const normalDesc = toHalfWidth(description).toUpperCase();
+
+        let allRules = [];
         for (let tag of TAG_CONFIG) {
             if (tag.key === '6') continue; 
             let kwString = currentKeywords[tag.key] || '';
-            let keywords = kwString.replace(/，/g, ',').split(',').map(w => toHalfWidth(w).trim().toUpperCase()).filter(w => w);
+            let keywords = kwString.replace(/，/g, ',')
+                .split(',')
+                .map(w => toHalfWidth(w).trim().toUpperCase())
+                .filter(Boolean);
+
             for (let word of keywords) {
-                if (normalDesc.includes(word)) { return tag.key; }
+                allRules.push({ key: tag.key, word: word });
             }
         }
-        return '6'; 
+        allRules.sort((a, b) => b.word.length - a.word.length);
+        for (let rule of allRules) {
+            if (normalDesc.includes(rule.word)) {
+                return rule.key;
+            }
+        }
+
+        return '6';
     }
 
     // ==========================================
